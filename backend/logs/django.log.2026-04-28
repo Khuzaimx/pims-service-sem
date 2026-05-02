@@ -10,3 +10,4 @@
 {"asctime": "2026-04-29 06:42:23,808", "levelname": "WARNING", "name": "django.request", "message": "Not Found: /api/questionnaires/analytics/all/", "module": "log", "process": 11, "thread": 130708836954880, "request_id": null, "user_id": null, "status_code": 404, "request": "<WSGIRequest: GET '/api/questionnaires/analytics/all/'>"}
 {"asctime": "2026-04-29 06:42:24,371", "levelname": "WARNING", "name": "django.request", "message": "Not Found: /api/questionnaires/analytics/all/", "module": "log", "process": 13, "thread": 130708836954880, "request_id": null, "user_id": null, "status_code": 404, "request": "<WSGIRequest: GET '/api/questionnaires/analytics/all/'>"}
 huzaim
+huzaim3
