@@ -15,6 +15,7 @@ const GroupsManagementPage = lazy(() => import('./pages/GroupsManagementPage'));
 const GroupDetailPage = lazy(() => import('./pages/GroupDetailPage'));
 const AdminBaselineResultsPage = lazy(() => import('./pages/AdminBaselineResultsPage'));
 const AdminPosttestResultsPage = lazy(() => import('./pages/AdminPosttestResultsPage'));
+const AdminSupportQueriesPage = lazy(() => import('./pages/AdminSupportQueriesPage'));
 const AdminLayout = lazy(() => import('./components/Admin/AdminLayout'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ResultsPage = lazy(() => import('./pages/ResultsPage'));
@@ -25,6 +26,7 @@ const BaselineRedirect = lazy(() => import('./components/Auth/BaselineRedirect')
 const App: React.FC = () => {
   // Helper to get fresh auth status
   const checkAuth = () => !!localStorage.getItem('access_token');
+  const isAdminUser = () => localStorage.getItem('user_role') === 'Admin';
 
   return (
     <Router>
@@ -35,17 +37,17 @@ const App: React.FC = () => {
             <Routes>
               <Route
                 path="/"
-                element={<div className="container mx-auto px-4 py-8 flex-grow">{checkAuth() ? <Navigate to="/dashboard" replace /> : <LandingPage />}</div>}
+                element={<div className="container mx-auto px-4 py-8 flex-grow">{checkAuth() ? (isAdminUser() ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />) : <LandingPage />}</div>}
               />
 
               {/* Guest Only Routes */}
               <Route
                 path="/login"
-                element={<div className="container mx-auto px-4 py-8 flex-grow">{checkAuth() ? <Navigate to="/dashboard" /> : <LoginPage />}</div>}
+                element={<div className="container mx-auto px-4 py-8 flex-grow">{checkAuth() ? (isAdminUser() ? <Navigate to="/admin" /> : <Navigate to="/dashboard" />) : <LoginPage />}</div>}
               />
               <Route
                 path="/register"
-                element={<div className="container mx-auto px-4 py-8 flex-grow">{checkAuth() ? <Navigate to="/dashboard" /> : <RegisterPage />}</div>}
+                element={<div className="container mx-auto px-4 py-8 flex-grow">{checkAuth() ? (isAdminUser() ? <Navigate to="/admin" /> : <Navigate to="/dashboard" />) : <RegisterPage />}</div>}
               />
 
               {/* Participant Routes - Wrapped in Container */}
@@ -63,9 +65,9 @@ const App: React.FC = () => {
                   <Route path="/admin" element={<AdminDashboardPage />} />
                   <Route path="/admin/groups" element={<GroupsManagementPage />} />
                   <Route path="/admin/groups/:id" element={<GroupDetailPage />} />
-                 <Route path="/admin/reports" element={<AdminReportsPage />} />
                  <Route path="/admin/baseline-data" element={<AdminBaselineResultsPage />} />
                  <Route path="/admin/posttest-data" element={<AdminPosttestResultsPage />} />
+                 <Route path="/admin/support-queries" element={<AdminSupportQueriesPage />} />
               </Route>
 
               {/* Fallback */}

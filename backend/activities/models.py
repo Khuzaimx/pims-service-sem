@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.db.models.functions import TruncDate
 from phases.models import Phase
 
 class Activity(models.Model):
@@ -28,5 +29,28 @@ class Submission(models.Model):
     submission_date = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                TruncDate('submission_date'),
+                'user',
+                name='unique_daily_submission_per_user'
+            ),
+            models.UniqueConstraint(
+                fields=['user', 'experiment_day'],
+                name='unique_user_experiment_day'
+            )
+        ]
+
     def __str__(self):
         return f"{self.user.username} - {self.activity.title}"
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.core.cache import cache
+
+@receiver(post_save, sender=Submission)
+def invalidate_user_completion_cache(sender, instance, **kwargs):
+    """Clears the completion_rate cache for a user when they make a submission."""
+    cache_key = f"user_{instance.user_id}_completion_rate"
+    cache.delete(cache_key)

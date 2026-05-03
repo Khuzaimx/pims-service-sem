@@ -22,6 +22,7 @@ class User(AbstractUser):
     full_name = models.CharField(max_length=255, blank=True)
     email = models.EmailField(unique=True)
     whatsapp_number = models.CharField(max_length=20, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
     
     # New Role ForeignKey
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
@@ -97,6 +98,36 @@ class User(AbstractUser):
         if not self.has_completed_baseline or self.has_completed_posttest:
             return False
         return self.current_experiment_day is not None and self.current_experiment_day >= 7
+
+    @property
+    def completion_rate(self):
+        """
+        Calculates the percentage of daily activities completed relative to current day.
+        Caches result for 5 minutes to prevent heavy DB hits on every dashboard refresh.
+        """
+        current_day = self.current_experiment_day
+        if not current_day:
+            return 0
+        
+        cache_key = f"user_{self.user_id}_completion_rate"
+        cached_rate = cache.get(cache_key)
+        if cached_rate is not None:
+            return cached_rate
+
+        # Max out at 7 days for calculation
+        effective_day = min(current_day, 7)
+        
+        from activities.models import Submission
+        submissions_count = Submission.objects.filter(user=self).values('experiment_day').distinct().count()
+        
+        # Avoid division by zero
+        rate = int((submissions_count / effective_day) * 100) if effective_day > 0 else 0
+        final_rate = min(rate, 100)
+        
+        # Cache for 5 minutes
+        cache.set(cache_key, final_rate, timeout=300)
+        
+        return final_rate
 
 class UserConsent(models.Model):
     """

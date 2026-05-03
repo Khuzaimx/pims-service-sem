@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api, { questionnairesApi } from '../services/api';
+import { useTranslation } from 'react-i18next';
 import { Calendar, CheckCircle2, Clock, ArrowRight, Bell, FileText, ClipboardCheck } from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
@@ -10,21 +11,30 @@ const DashboardPage: React.FC = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [posttestQuestionnaire, setPosttestQuestionnaire] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
+
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [actRes, phaseRes, subRes, profileRes] = await Promise.all([
+        const [actRes, phaseRes, subRes, activitySubRes, profileRes, notifRes] = await Promise.all([
           api.get('/activities/daily/current/').catch(() => ({ data: null })),
           api.get('/phases/current/').catch(() => ({ data: null })),
-          questionnairesApi.listResponseSets().catch(() => ({ data: { results: [] } })),
-          api.get('/users/me/').catch(() => ({ data: null }))
+          api.get('/questionnaires/response-sets/').catch(() => ({ data: { results: [] } })),
+          api.get('/activities/all-submissions/').catch(() => ({ data: { results: [] } })),
+          api.get('/users/me/').catch(() => ({ data: null })),
+          api.get('/notifications/').catch(() => ({ data: [] }))
         ]);
 
         const actData = actRes.data;
         setActivities(actData && !actData.detail ? [actData] : []);
         setPhase(phaseRes.data);
         setUserProfile(profileRes.data);
+        
+        // Handle notifications
+        const notifData = Array.isArray(notifRes.data) ? notifRes.data : notifRes.data?.results || [];
+        setNotifications(notifData.slice(0, 3));
 
         // If user is due for post-test, find the post-test questionnaire
         if (profileRes.data?.is_posttest_due) {
@@ -38,8 +48,27 @@ const DashboardPage: React.FC = () => {
           }
         }
 
-        const rawSubmissions = Array.isArray(subRes.data) ? subRes.data : subRes.data?.results || [];
-        setSubmissions(rawSubmissions.filter((s: any) => s.status === 'COMPLETED').slice(0, 5));
+        const questionnaireSubmissions = (Array.isArray(subRes.data) ? subRes.data : subRes.data?.results || [])
+          .filter((s: any) => s.status === 'COMPLETED')
+          .map((s: any) => ({
+            ...s,
+            type: 'questionnaire',
+            display_title: s.questionnaire_title || 'Assessment Result',
+            date: s.completed_at
+          }));
+
+        const dailySubmissions = (Array.isArray(activitySubRes.data) ? activitySubRes.data : activitySubRes.data?.results || []).map((s: any) => ({
+          ...s,
+          type: 'activity',
+          display_title: s.activity_title || 'Daily Activity',
+          date: s.submission_date
+        }));
+
+        const combinedSubmissions = [...questionnaireSubmissions, ...dailySubmissions]
+          .filter(s => s.date)
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        setSubmissions(combinedSubmissions.slice(0, 5));
       } catch (err) {
         console.error(err);
       } finally {
@@ -49,19 +78,26 @@ const DashboardPage: React.FC = () => {
     fetchData();
   }, []);
 
+  const getPerformanceLabel = (rate: number) => {
+    if (rate >= 90) return t('dashboard.optimal');
+    if (rate >= 70) return 'Good';
+    if (rate >= 40) return 'Average';
+    return 'Action Required';
+  };
+
   return (
     <div className="space-y-8">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h1 className="text-3xl font-bold mb-2 text-zinc-900 leading-tight">Welcome Back</h1>
-          <p className="text-zinc-500 font-medium text-sm">You are currently in <span className="text-zinc-800 font-semibold">{phase?.name || 'Initialization'}</span></p>
+          <h1 className="text-3xl font-bold mb-2 text-zinc-900 leading-tight">{t('dashboard.welcome')}</h1>
+          <p className="text-zinc-500 font-medium text-sm">{t('dashboard.welcome_new')} <span className="text-zinc-800 font-semibold">{phase?.name || t('dashboard.initialization')}</span></p>
         </div>
         <div className="bg-white border border-zinc-200 rounded-lg px-4 py-2 flex items-center gap-3 shadow-sm">
           <Calendar className="text-zinc-500" size={18} />
           <span className="text-sm font-semibold text-zinc-700">
-            {activities.length > 0 && activities[0].current_day 
-              ? `Day ${activities[0].current_day} of 7` 
-              : 'Welcome'}
+            {activities.length > 0 && activities[0].current_day
+              ? t('dashboard.day_of', { current: activities[0].current_day, total: 7 })
+              : t('dashboard.welcome_new')}
           </span>
         </div>
       </header>
@@ -93,7 +129,7 @@ const DashboardPage: React.FC = () => {
 
           <section className="border border-zinc-200 rounded-xl p-6 md:p-8 bg-white shadow-sm">
             <h2 className="text-xl font-bold text-zinc-900 mb-6 flex items-center gap-2">
-              <Clock className="text-zinc-500" size={20} /> Today's Focus
+              <Clock className="text-zinc-500" size={20} /> {t('dashboard.todays_focus')}
             </h2>
 
             <div className="space-y-3">
@@ -124,33 +160,39 @@ const DashboardPage: React.FC = () => {
                 </Link>
               ))}
               {activities.length === 0 && !loading && (
-                <div className="text-center py-10 text-zinc-400 italic">No activities scheduled for today. Check back later!</div>
+                <div className="text-center py-10 text-zinc-400 italic">{t('dashboard.no_activities')}</div>
               )}
             </div>
           </section>
 
           <section className="border border-zinc-200 rounded-xl p-6 md:p-8 bg-white shadow-sm">
             <h2 className="text-xl font-bold text-zinc-900 mb-6 flex items-center gap-2">
-              <CheckCircle2 className="text-zinc-500" size={20} /> Recent Submissions
+              <CheckCircle2 className="text-zinc-500" size={20} /> {t('dashboard.recent_submissions')}
             </h2>
             <div className="divide-y divide-zinc-100">
               {(submissions || []).map((sub) => (
-                <div key={sub.id} className="py-4 flex items-center justify-between group">
+                <div key={`${sub.type}-${sub.id}`} className="py-4 flex items-center justify-between group">
                   <div className="flex items-center gap-3">
                     <FileText size={18} className="text-zinc-400" />
                     <div>
-                      <span className="block font-medium text-zinc-800">{sub.questionnaire_title || 'Assessment Result'}</span>
-                      <span className="text-zinc-400 text-xs">{new Date(sub.completed_at).toLocaleDateString()}</span>
+                      <span className="block font-medium text-zinc-800">{sub.display_title}</span>
+                      <span className="text-zinc-400 text-xs">{new Date(sub.date).toLocaleDateString()}</span>
                     </div>
                   </div>
-                  <Link to={`/results/${sub.id}`} className="flex items-center gap-1 text-zinc-600 text-sm font-medium hover:text-zinc-900 opacity-0 group-hover:opacity-100 transition-all">
-                    View Insights <ArrowRight size={14} />
-                  </Link>
+                  {sub.type === 'questionnaire' ? (
+                    <Link to={`/results/${sub.id}`} className="flex items-center gap-1 text-zinc-600 text-sm font-medium hover:text-zinc-900 opacity-0 group-hover:opacity-100 transition-all">
+                      {t('dashboard.view_insights')} <ArrowRight size={14} />
+                    </Link>
+                  ) : (
+                    <Link to={`/activity/${sub.activity}`} className="flex items-center gap-1 text-zinc-600 text-sm font-medium hover:text-zinc-900 opacity-0 group-hover:opacity-100 transition-all">
+                      Edit <ArrowRight size={14} />
+                    </Link>
+                  )}
                 </div>
               ))}
               {submissions.length === 0 && (
                 <div className="py-8 text-center text-zinc-400 italic text-sm">
-                  No submissions yet. Complete your baseline to see insights.
+                  {t('dashboard.no_submissions')}
                 </div>
               )}
             </div>
@@ -160,19 +202,30 @@ const DashboardPage: React.FC = () => {
         <div className="space-y-6">
           <div className="border border-zinc-200 rounded-xl p-6 bg-zinc-800 text-white shadow-sm">
             <div className="flex items-center gap-2 font-semibold text-xs mb-4 text-zinc-300 uppercase tracking-wider">
-              <Bell size={14} /> Notification
+              <Bell size={14} /> {t('dashboard.notifications')}
             </div>
-            <p className="text-sm leading-relaxed text-zinc-100">
-              "Great job completing yesterday's task! Phase 2 begins in 3 days. Get ready for new challenges."
-            </p>
+            {notifications.length > 0 ? (
+              <div className="space-y-4">
+                {notifications.map((n) => (
+                  <div key={n.id} className="text-sm leading-relaxed border-b border-zinc-700 pb-2 last:border-0">
+                    {n.message}
+                    <div className="text-[10px] text-zinc-400 mt-1">{new Date(n.created_at).toLocaleString()}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm italic text-zinc-400">No new notifications</p>
+            )}
           </div>
 
           <div className="border border-zinc-200 rounded-xl p-6 text-center bg-white shadow-sm">
             <div className="inline-block p-5 rounded-xl bg-zinc-800 text-white mb-4">
-              <div className="text-3xl font-bold">85%</div>
+              <div className="text-3xl font-bold">{userProfile?.completion_rate || 0}%</div>
             </div>
-            <h4 className="font-semibold text-zinc-800 text-sm">Completion Rate</h4>
-            <p className="text-zinc-400 text-xs mt-1">Performance: Optimal</p>
+            <h4 className="font-semibold text-zinc-800 text-sm">{t('dashboard.completion_rate')}</h4>
+            <p className="text-zinc-400 text-xs mt-1">
+              {t('dashboard.performance')}: {getPerformanceLabel(userProfile?.completion_rate || 0)}
+            </p>
           </div>
         </div>
       </div>
