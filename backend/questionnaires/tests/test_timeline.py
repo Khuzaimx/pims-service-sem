@@ -212,3 +212,23 @@ class TestTimelineScheduler:
         url = '/api/questionnaires/due/'
         response = api_client.get(url)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.django_db
+def test_milestone_availability_by_timeline_delta(authenticated_client, test_user):
+    # Mock baseline_completed_at to 91 days ago.
+    test_user.has_completed_sociodemographic = True
+    test_user.has_completed_baseline = True
+    test_user.has_completed_posttest = True  # Complete the 7_DAYS milestone
+    test_user.baseline_completed_at = timezone.now() - timedelta(days=91)
+    test_user.save()
+
+    # Clear cache to ensure clean test run
+    cache.clear()
+
+    # Assert that the API endpoint returns 3_MONTHS as the due milestone.
+    url = '/api/questionnaires/due/'
+    response = authenticated_client.get(url)
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data['due_milestone'] == '3_MONTHS'
+
