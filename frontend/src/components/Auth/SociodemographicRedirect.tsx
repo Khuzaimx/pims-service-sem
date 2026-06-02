@@ -3,44 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import { questionnairesApi } from '../../services/api';
 import { Loader2 } from 'lucide-react';
 
-const BaselineRedirect: React.FC = () => {
+const SociodemographicRedirect: React.FC = () => {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchBaselineId = async () => {
+    const fetchSociodemographicId = async () => {
       try {
-        const hasCompletedSociodemographic = localStorage.getItem('has_completed_sociodemographic') === 'true';
         const response = await questionnairesApi.list();
         const questionnaires = response.data;
 
-        if (!hasCompletedSociodemographic) {
-          // Find the questionnaire with assessment_type === 'SOCIODEMOGRAPHIC'
-          const socio = questionnaires.find((q: any) => q.is_active && q.assessment_type === 'SOCIODEMOGRAPHIC');
-          if (socio) {
-            navigate(`/questionnaire/${socio.id}?milestone=SIGNUP`, { replace: true });
-          } else {
-            setError('No active sociodemographic assessment found. Please contact an administrator.');
-          }
+        // Find the questionnaire with assessment_type === 'SOCIODEMOGRAPHIC'
+        const socio = questionnaires.find((q: any) => q.is_active && q.assessment_type === 'SOCIODEMOGRAPHIC');
+        if (socio) {
+          navigate(`/questionnaire/${socio.id}?milestone=SIGNUP`, { replace: true });
         } else {
-          // Find the baseline psychometric scales
-          const battery = questionnaires.find((q: any) => q.is_active && q.assessment_type === 'PSYCHOMETRIC') ||
-                          questionnaires.find((q: any) => q.is_active && q.is_baseline) ||
-                          questionnaires.find((q: any) => q.is_active);
-          
-          if (battery) {
-            navigate(`/questionnaire/${battery.id}?milestone=SIGNUP`, { replace: true });
-          } else {
-            setError('No active psychometric assessment found. Please contact an administrator.');
-          }
+          setError('No active sociodemographic assessment found. Please contact an administrator.');
         }
       } catch (err) {
         setError('Failed to load assessment information. Please try again later.');
-        console.error('Baseline fetch error:', err);
+        console.error('Sociodemographic fetch error:', err);
       }
     };
 
-    fetchBaselineId();
+    fetchSociodemographicId();
   }, [navigate]);
 
   if (error) {

@@ -106,31 +106,14 @@ const QuestionnairePage: React.FC = () => {
 
       await questionnairesApi.submitResponseSet(responseSetId, payload);
 
-      // Update Onboarding State
-      const queryParams = new URLSearchParams(window.location.search);
-      const milestone = queryParams.get('milestone');
-
-      if (questionnaire?.assessment_type === 'SOCIODEMOGRAPHIC') {
-        localStorage.setItem('has_completed_sociodemographic', 'true');
-      }
-
-      const hasCompletedSocio = localStorage.getItem('has_completed_sociodemographic') === 'true';
-      if (hasCompletedSocio && questionnaire?.assessment_type === 'PSYCHOMETRIC' && milestone === 'SIGNUP') {
-        localStorage.setItem('has_completed_baseline', 'true');
-      }
-
       setCompleted(true);
 
       // Short delay for success experience before redirect
       setTimeout(() => {
-        if (questionnaire?.assessment_type === 'SOCIODEMOGRAPHIC') {
-          navigate('/baseline-scales', { replace: true });
-        } else {
-          navigate('/dashboard', {
-            state: { message: 'Assessment finalized.' },
-            replace: true
-          });
-        }
+        navigate('/dashboard', {
+          state: { message: 'Assessment finalized.' },
+          replace: true
+        });
       }, 3000);
     } catch (err: any) {
       setError('Failed to submit questionnaire. Please try again.');
