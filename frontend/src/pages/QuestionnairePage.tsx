@@ -48,13 +48,19 @@ const QuestionnairePage: React.FC = () => {
           setResponses(restored);
         }
       } catch (err: any) {
-        setError(err.response?.data?.detail || 'Failed to initialize questionnaire session.');
+        const detail = err.response?.data?.detail;
+        if (detail && detail.includes('already completed the sociodemographic')) {
+          localStorage.setItem('has_completed_sociodemographic', 'true');
+          navigate('/dashboard', { replace: true });
+        } else {
+          setError(detail || 'Failed to initialize questionnaire session.');
+        }
       } finally {
         setLoading(false);
       }
     };
     initSession();
-  }, [id]);
+  }, [id, navigate]);
 
   const questions = questionnaire?.questions || [];
   const currentQuestion = questions[currentIndex];
@@ -105,6 +111,10 @@ const QuestionnairePage: React.FC = () => {
       });
 
       await questionnairesApi.submitResponseSet(responseSetId, payload);
+
+      if (questionnaire?.assessment_type === 'SOCIODEMOGRAPHIC') {
+        localStorage.setItem('has_completed_sociodemographic', 'true');
+      }
 
       setCompleted(true);
 
