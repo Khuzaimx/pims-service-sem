@@ -6,8 +6,11 @@ from django.utils import timezone
 from django.core.cache import cache
 from .models import Activity, Submission
 from .serializers import ActivitySerializer, DailySubmissionSerializer, SubmissionSerializer
-from users.permissions import BaselineCompleted
+from users.permissions import OnboardingCompleted
 from django.contrib.auth import get_user_model
+import logging
+
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -39,8 +42,11 @@ class DailyActivityViewSet(viewsets.ModelViewSet):
         if current_day > 7:
             return Response({"detail": "Trial period completed."}, status=status.HTTP_200_OK)
 
-        from django.db.models import Q
-        activity = Activity.objects.filter(Q(group=user.group) | Q(group__isnull=True), day_number=current_day).first()
+        activity = None
+        if user.group:
+            activity = Activity.objects.filter(group=user.group, day_number=current_day).first()
+        if not activity:
+            activity = Activity.objects.filter(group__isnull=True, day_number=current_day).first()
         if not activity:
             return Response({"detail": f"No activity found for your group on Day {current_day}."}, status=status.HTTP_404_NOT_FOUND)
         
@@ -74,8 +80,15 @@ class DailyActivityViewSet(viewsets.ModelViewSet):
             if submission:
                 data['submission_content'] = submission.content
                 data['submission_id'] = submission.id
+                data['entry_1'] = submission.entry_1
+                data['entry_2'] = submission.entry_2
+                data['entry_3'] = submission.entry_3
         
-        return Response(data)
+        response = Response(data)
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        return response
 
     @action(detail=False, methods=['post'])
     def submit(self, request):
@@ -92,17 +105,18 @@ class DailyActivityViewSet(viewsets.ModelViewSet):
             User.objects.select_for_update().get(pk=user.user_id)
             
             # Re-check the submission state inside the lock
-            # Allow updating existing submission for today
+            # Submissions are locked once submitted. Block updates.
             today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
             existing_submission = Submission.objects.filter(user=user, submission_date__gte=today_start).first()
             
-            # Proceed with submission or update
-            current_day = user.current_experiment_day
-            
             if existing_submission:
-                serializer = DailySubmissionSerializer(existing_submission, data=request.data, context={'request': request}, partial=True)
-            else:
-                serializer = DailySubmissionSerializer(data=request.data, context={'request': request})
+                return Response(
+                    {"detail": "This day's activity has already been submitted and is locked."}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            current_day = user.current_experiment_day
+            serializer = DailySubmissionSerializer(data=request.data, context={'request': request})
             if serializer.is_valid():
                 try:
                     serializer.save(user=user, experiment_day=current_day)
@@ -126,7 +140,7 @@ class ActivityViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Standard ViewSet for listing activities.
     """
-    permission_classes = [BaselineCompleted]
+    permission_classes = [OnboardingCompleted]
     queryset = Activity.objects.all()
     serializer_class = ActivitySerializer
 
@@ -134,7 +148,7 @@ class SubmissionViewSet(viewsets.ModelViewSet):
     """
     Standard ViewSet for handling task submissions.
     """
-    permission_classes = [BaselineCompleted]
+    permission_classes = [OnboardingCompleted]
     serializer_class = SubmissionSerializer
 
     def get_queryset(self):

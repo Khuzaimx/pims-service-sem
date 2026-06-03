@@ -9,10 +9,25 @@ from datetime import timedelta
 # Default prompts for the 4 original research groups.
 # Any group not listed here gets the fallback prompt.
 GROUP_PROMPTS = {
-    'Control': (
-        'Think of an early childhood memory and write it down in as much detail as you can remember.'
+    'Group 1': (
+        "Today's task: Recall three different memories from your early childhood, before the age of 12. "
+        "Write a brief description of each. They can be pleasant, neutral, or ordinary, anything you remember. "
+        "Try to choose memories you have not written about earlier this week. Spend about 10 minutes total. | "
+        "آج کا کام: اپنے بچپن کی، 12 سال کی عمر سے پہلے کی، تین مختلف یادیں ذہن میں لائیں۔ ہر ایک کی مختصر تفصیل لکھیں۔ "
+        "یہ یادیں خوشگوار، عام، یا معمولی، کچھ بھی ہو سکتی ہیں — جو بھی یاد ہو۔ کوشش کریں کہ ایسی یادیں منتخب کریں جن کے "
+        "بارے میں اس ہفتے پہلے نہ لکھا ہو۔ کل تقریباً 10 منٹ صرف کریں۔"
     ),
-    'PERMA': (
+    'Group 2': (
+        "Today's task: Write down three things from today that you are grateful for. For each one: "
+        "describe what happened; note who was involved (a specific person, a stranger, yourself, or no one in particular); "
+        "explain why it happened, what or who made this good thing possible. Try to choose new things each day, "
+        "not repeat the same gratitude. | "
+        "آج کا کام: آج کی تین ایسی چیزیں لکھیں جن کے لیے آپ شکر گزار ہیں۔ ہر ایک کے بارے میں: "
+        "بیان کریں کہ کیا ہوا؛ یہ بتائیں کہ اس میں کون شامل تھا (کوئی مخصوص شخص، اجنبی، آپ خود، یا کوئی بھی نہیں)؛ "
+        "وضاحت کریں کہ یہ کیوں ہوا، کس یا کس چیز نے اس اچھی بات کو ممکن بنایا۔ کوشش کریں کہ ہر دن نئی چیزیں "
+        "منتخب کریں، ایک ہی شکر گزاری بار بار نہ دہرائیں۔"
+    ),
+    'Group 3': (
         'Before going to sleep, write down one thing from each of the following from your day:\n'
         '- Something that gave you pleasure or made you smile\n'
         '- Something you were so absorbed in you lost track of time\n'
@@ -20,11 +35,7 @@ GROUP_PROMPTS = {
         '- Something that felt purposeful or significant to you\n'
         '- Something you did well or accomplished today'
     ),
-    'Gratitude': (
-        'Before going to sleep, write down three things you are genuinely grateful for today. '
-        'They can be big or small — a person, a moment, a blessing, anything.'
-    ),
-    'Combined': (
+    'Group 4': (
         'Before going to sleep, write down the following:\n'
         '- One thing that gave you pleasure today\n'
         '- One thing you were deeply absorbed in\n'

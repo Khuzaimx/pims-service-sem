@@ -16,8 +16,8 @@ def timeline_setup(db, test_phase):
         group = Group.objects.create(name="Timeline Group")
         user = User.objects.create_user(
             username="timeline_user", email="tl@test.com", password="pwd",
-            group=group, has_completed_baseline=True,
-            baseline_completed_at=timezone.now()
+            group=group, has_completed_sociodemographic=True,
+            onboarding_completed_at=timezone.now()
         )
         # Create activities for Day 1 and Day 2
         act1 = Activity.objects.create(
@@ -79,7 +79,7 @@ class TestTimelineAndCaching:
         assert cache.get(cache_key) == 1
         
         # Manually change the date in DB but keep cache - should still return 1
-        user.baseline_completed_at = user.baseline_completed_at - timedelta(days=5)
+        user.onboarding_completed_at = user.onboarding_completed_at - timedelta(days=5)
         user.save()
         
         assert user.current_experiment_day == 1 # Hits cache
@@ -91,7 +91,7 @@ class TestTimelineAndCaching:
         
         # Travel to Day 3
         three_days_ago = timezone.now() - timedelta(days=2)
-        user.baseline_completed_at = three_days_ago
+        user.onboarding_completed_at = three_days_ago
         user.save()
         cache.clear() # Ensure clean state
 
@@ -103,12 +103,18 @@ class TestTimelineAndCaching:
         )
 
         url = reverse('daily-activity-submit')
-        payload = {"activity": act3.id, "content": "Day 3 entry"}
+        words_20 = "word " * 20
+        payload = {
+            "activity": act3.id,
+            "entry_1": words_20,
+            "entry_2": words_20,
+            "entry_3": words_20
+        }
         
         response = api_client.post(url, payload, format='json')
         assert response.status_code == status.HTTP_201_CREATED
         
-        submission = Submission.objects.get(user=user, content="Day 3 entry")
+        submission = Submission.objects.get(user=user)
         assert submission.experiment_day == 3
 
     def test_block_wrong_experiment_day_submission(self, api_client, timeline_setup):
@@ -118,7 +124,13 @@ class TestTimelineAndCaching:
         
         # User is on Day 1, try to submit for Day 2
         url = reverse('daily-activity-submit')
-        payload = {"activity": act2.id, "content": "Premature entry"}
+        words_20 = "word " * 20
+        payload = {
+            "activity": act2.id,
+            "entry_1": words_20,
+            "entry_2": words_20,
+            "entry_3": words_20
+        }
         
         response = api_client.post(url, payload, format='json')
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -130,32 +142,49 @@ class TestTimelineAndCaching:
         api_client.force_authenticate(user=user)
         
         url = reverse('submission-list') # Generic SubmissionViewSet
+        words_20 = "word " * 20
         
-        # First submission succeeds
-        response1 = api_client.post(url, {"activity": act1.id, "content": "First"}, format='json')
-        assert response1.status_code == status.HTTP_201_CREATED
+        response1 = api_client.post(url, {
+            "activity": act1.id,
+            "entry_1": words_20,
+            "entry_2": words_20,
+            "entry_3": words_20
+        }, format='json')
+        assert response1.status_code == status.HTTP_201_CREATED, response1.data
         
         # Second submission on same day fails due to database IntegrityError (one per experiment day)
-        response2 = api_client.post(url, {"activity": act1.id, "content": "Second"}, format='json')
+        response2 = api_client.post(url, {
+            "activity": act1.id,
+            "entry_1": words_20,
+            "entry_2": words_20,
+            "entry_3": words_20
+        }, format='json')
         assert response2.status_code == status.HTTP_400_BAD_REQUEST
         assert "already made a submission for today" in str(response2.data)
 
-    def test_daily_activity_update_behavior(self, api_client, timeline_setup):
-        """Verify that the daily activity endpoint allows updating today's submission rather than creating a new one."""
+    def test_daily_activity_locking_behavior(self, api_client, timeline_setup):
+        """Verify that the daily activity endpoint locks submissions and blocks same-day updates."""
         user, group, act1, act2 = timeline_setup
         api_client.force_authenticate(user=user)
         
         url = reverse('daily-activity-submit')
+        words_20 = "word " * 20
+        payload = {
+            "activity": act1.id,
+            "entry_1": words_20,
+            "entry_2": words_20,
+            "entry_3": words_20
+        }
         
         # First submission
-        api_client.post(url, {"activity": act1.id, "content": "Initial"}, format='json')
+        api_client.post(url, payload, format='json')
         assert Submission.objects.filter(user=user).count() == 1
         
-        # Second submission (update)
-        response = api_client.post(url, {"activity": act1.id, "content": "Updated"}, format='json')
-        assert response.status_code == status.HTTP_201_CREATED
+        # Second submission (should be blocked and locked)
+        response = api_client.post(url, payload, format='json')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "already been submitted and is locked" in response.data['detail']
         assert Submission.objects.filter(user=user).count() == 1
-        assert Submission.objects.get(user=user).content == "Updated"
 
     def test_redis_submission_flag_caching(self, api_client, timeline_setup):
         """Verify that submitted_today flag is cached in Redis after submission."""
@@ -166,7 +195,13 @@ class TestTimelineAndCaching:
         assert cache.get(cache_key) is None
         
         # Submit
-        api_client.post(reverse('daily-activity-submit'), {"activity": act1.id, "content": "..."})
+        words_20 = "word " * 20
+        api_client.post(reverse('daily-activity-submit'), {
+            "activity": act1.id,
+            "entry_1": words_20,
+            "entry_2": words_20,
+            "entry_3": words_20
+        })
         
         # Should now be in cache
         assert cache.get(cache_key) is True
