@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api, { questionnairesApi } from '../services/api';
 import { useTranslation } from 'react-i18next';
-import { Calendar, CheckCircle2, Clock, ArrowRight, Bell, FileText, ClipboardCheck } from 'lucide-react';
+import { Calendar, CheckCircle2, Clock, ArrowRight, FileText, ClipboardCheck, AlertTriangle } from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
   const [activities, setActivities] = useState<any[]>([]);
@@ -13,38 +13,40 @@ const DashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const { t } = useTranslation();
 
-  const [notifications, setNotifications] = useState<any[]>([]);
+
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [actRes, phaseRes, subRes, activitySubRes, profileRes, notifRes] = await Promise.all([
+        const [actRes, phaseRes, subRes, activitySubRes, profileRes] = await Promise.all([
           api.get('/activities/daily/current/').catch(() => ({ data: null })),
           api.get('/phases/current/').catch(() => ({ data: null })),
           api.get('/questionnaires/response-sets/').catch(() => ({ data: { results: [] } })),
           api.get('/activities/all-submissions/').catch(() => ({ data: { results: [] } })),
-          api.get('/users/profile/').catch(() => ({ data: null })),
-          api.get('/notifications/').catch(() => ({ data: [] }))
+          api.get('/users/profile/').catch(() => ({ data: null }))
         ]);
 
         const actData = actRes.data;
         setActivities(actData && !actData.detail ? [actData] : []);
         setPhase(phaseRes.data);
         setUserProfile(profileRes.data);
-        
-        // Handle notifications
-        const notifData = Array.isArray(notifRes.data) ? notifRes.data : notifRes.data?.results || [];
-        setNotifications(notifData.slice(0, 3));
 
-        // If user is due for post-test, find the post-test questionnaire
-        if (profileRes.data?.is_posttest_due) {
+        // Keep localStorage in sync with the server-side due_milestone
+        if (profileRes.data) {
+          localStorage.setItem('due_milestone', profileRes.data.due_milestone || '');
+        }
+        
+
+
+        // If user is due for a milestone, find the psychometric questionnaire
+        if (profileRes.data?.due_milestone) {
           try {
             const questionnaires = await questionnairesApi.list();
             const qList = Array.isArray(questionnaires.data) ? questionnaires.data : questionnaires.data?.results || [];
-            const posttest = qList.find((q: any) => q.is_posttest);
-            if (posttest) setPosttestQuestionnaire(posttest);
+            const battery = qList.find((q: any) => q.is_active && q.assessment_type === 'PSYCHOMETRIC');
+            if (battery) setPosttestQuestionnaire(battery);
           } catch (e) {
-            console.error('Failed to fetch posttest questionnaire', e);
+            console.error('Failed to fetch milestone questionnaire', e);
           }
         }
 
@@ -85,6 +87,40 @@ const DashboardPage: React.FC = () => {
     return 'Action Required';
   };
 
+  if (userProfile?.is_disqualified) {
+    return (
+      <div className="max-w-2xl mx-auto py-12 px-4">
+        <div className="bg-white border border-zinc-200 rounded-2xl p-8 md:p-12 shadow-sm text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
+          <div className="w-16 h-16 bg-zinc-50 border border-zinc-200 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+            <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+          </div>
+          
+          <div className="space-y-4">
+            <h1 className="text-3xl font-bold text-zinc-900 leading-tight">Thank You / شکریہ</h1>
+            
+            <div className="border-t border-zinc-100 my-6"></div>
+            
+            <div className="space-y-6 text-left">
+              <div className="space-y-2">
+                <span className="text-xs font-black uppercase tracking-wider text-zinc-400">English</span>
+                <p className="text-zinc-650 font-medium leading-relaxed">
+                  Thank you for your interest in our study. Based on your responses, you do not meet the inclusion criteria for this research experiment. We sincerely appreciate your time and willingness to participate.
+                </p>
+              </div>
+              
+              <div className="space-y-2 text-right" dir="rtl">
+                <span className="text-xs font-black uppercase tracking-wider text-zinc-400 block text-left md:text-right" dir="ltr">Urdu</span>
+                <p className="text-zinc-650 font-medium leading-relaxed font-urdu text-lg">
+                  ہمارے مطالعے میں دلچسپی لینے کا شکریہ۔ آپ کے جوابات کی بنیاد پر، آپ اس تحقیقی تجربے میں شمولیت کے معیار پر پورا نہیں اترتے۔ ہم شرکت کے لیے آپ کے وقت اور آمادگی کی تہہ دل سے تعریف کرتے ہیں۔
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
@@ -102,30 +138,89 @@ const DashboardPage: React.FC = () => {
         </div>
       </header>
 
+      {userProfile?.has_consecutive_misses && (
+        <section className="border-2 border-amber-200 rounded-xl p-5 bg-amber-50 text-amber-900 shadow-sm flex items-start gap-4 animate-in slide-in-from-top duration-300">
+          <div className="w-10 h-10 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0">
+            <AlertTriangle size={20} />
+          </div>
+          <div>
+            <h3 className="font-bold text-amber-950">Consistency Nudge</h3>
+            <p className="text-sm text-amber-800 mt-1 font-medium">{userProfile.consecutive_misses_message}</p>
+          </div>
+        </section>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          {/* Post-test Banner */}
-          {userProfile?.is_posttest_due && posttestQuestionnaire && (
-            <section className="border-2 border-emerald-200 rounded-xl p-6 md:p-8 bg-gradient-to-r from-emerald-50 to-white shadow-sm">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center text-white shrink-0">
-                    <ClipboardCheck size={24} />
+          {/* Milestone Banner */}
+          {userProfile?.due_milestone && posttestQuestionnaire && (() => {
+            const getMilestoneDetails = (milestone: string) => {
+              switch (milestone) {
+                case 'SIGNUP':
+                  return {
+                    title: 'Baseline Psychometric Scales Available',
+                    description: 'Please complete the baseline assessment to finalize your signup.',
+                    buttonText: 'Start Baseline Assessment',
+                    colorClass: 'from-emerald-50 to-white border-emerald-200 text-emerald-600 bg-emerald-600 hover:bg-emerald-700'
+                  };
+                case '7_DAYS':
+                  return {
+                    title: 'Day 7 Post-Test Available',
+                    description: 'Congratulations on completing 7 days! Please take the final assessment to wrap up your experiment.',
+                    buttonText: 'Start Post-Test',
+                    colorClass: 'from-emerald-50 to-white border-emerald-200 text-emerald-600 bg-emerald-600 hover:bg-emerald-700'
+                  };
+                case '3_MONTHS':
+                  return {
+                    title: 'Month 3 Follow-Up Available',
+                    description: 'Please complete the Month 3 follow-up assessment.',
+                    buttonText: 'Start Month 3 Assessment',
+                    colorClass: 'from-blue-50 to-white border-blue-200 text-blue-600 bg-blue-600 hover:bg-blue-700'
+                  };
+                case '6_MONTHS':
+                  return {
+                    title: 'Month 6 Follow-Up Available',
+                    description: 'Please complete the Month 6 follow-up assessment.',
+                    buttonText: 'Start Month 6 Assessment',
+                    colorClass: 'from-purple-50 to-white border-purple-200 text-purple-600 bg-purple-600 hover:bg-purple-700'
+                  };
+                case '1_YEAR':
+                  return {
+                    title: 'T4 Month 12 Follow-Up Available',
+                    description: 'Please complete the T4 12-month follow-up assessment (PERMA, PHQ-9, GAD-7, PANAS, Gratitude, SIDAS).',
+                    buttonText: 'Start T4 Assessment',
+                    colorClass: 'from-indigo-50 to-white border-indigo-200 text-indigo-600 bg-indigo-600 hover:bg-indigo-700'
+                  };
+                default:
+                  return null;
+              }
+            };
+
+            const details = getMilestoneDetails(userProfile.due_milestone);
+            if (!details) return null;
+
+            return (
+              <section className={`border-2 rounded-xl p-6 md:p-8 bg-gradient-to-r shadow-sm ${details.colorClass.split(' ').slice(0, 2).join(' ')}`}>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shrink-0 ${details.colorClass.split(' ').slice(4, 5).join(' ')}`}>
+                      <ClipboardCheck size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-zinc-900">{details.title}</h3>
+                      <p className="text-sm text-zinc-500 mt-0.5">{details.description}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-zinc-900">Day 7 Post-Test Available</h3>
-                    <p className="text-sm text-zinc-500 mt-0.5">Congratulations on completing 7 days! Please take the final assessment to wrap up your experiment.</p>
-                  </div>
+                  <Link
+                    to={`/questionnaire/${posttestQuestionnaire.id}?milestone=${userProfile.due_milestone}`}
+                    className={`px-6 py-3 text-white rounded-lg font-semibold text-sm transition-colors flex items-center gap-2 shrink-0 ${details.colorClass.split(' ').slice(4, 6).join(' ')}`}
+                  >
+                    {details.buttonText} <ArrowRight size={16} />
+                  </Link>
                 </div>
-                <Link
-                  to={`/questionnaire/${posttestQuestionnaire.id}`}
-                  className="px-6 py-3 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 transition-colors flex items-center gap-2 shrink-0"
-                >
-                  Start Post-Test <ArrowRight size={16} />
-                </Link>
-              </div>
-            </section>
-          )}
+              </section>
+            );
+          })()}
 
           <section className="border border-zinc-200 rounded-xl p-6 md:p-8 bg-white shadow-sm">
             <h2 className="text-xl font-bold text-zinc-900 mb-6 flex items-center gap-2">
@@ -200,23 +295,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         <div className="space-y-6">
-          <div className="border border-zinc-200 rounded-xl p-6 bg-zinc-800 text-white shadow-sm">
-            <div className="flex items-center gap-2 font-semibold text-xs mb-4 text-zinc-300 uppercase tracking-wider">
-              <Bell size={14} /> {t('dashboard.notifications')}
-            </div>
-            {notifications.length > 0 ? (
-              <div className="space-y-4">
-                {notifications.map((n) => (
-                  <div key={n.id} className="text-sm leading-relaxed border-b border-zinc-700 pb-2 last:border-0">
-                    {n.message}
-                    <div className="text-[10px] text-zinc-400 mt-1">{new Date(n.created_at).toLocaleString()}</div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm italic text-zinc-400">No new notifications</p>
-            )}
-          </div>
+
 
           <div className="border border-zinc-200 rounded-xl p-6 text-center bg-white shadow-sm">
             <div className="inline-block p-5 rounded-xl bg-zinc-800 text-white mb-4">

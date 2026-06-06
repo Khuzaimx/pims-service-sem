@@ -1,5 +1,6 @@
 from rest_framework import generics, permissions, status, pagination
 from rest_framework.response import Response as DRFResponse
+from rest_framework.views import APIView
 # Researcher Data Views
 from .models import Questionnaire, ResponseSet, Response
 
@@ -45,18 +46,28 @@ class ResponseSetListCreateView(generics.ListCreateAPIView):
         from .serializers import ResponseSetSerializer
         
         questionnaire_id = request.data.get('questionnaire')
+        milestone = request.data.get('milestone')
         user = self.request.user
         
-        # Check for existing DRAFT response set for this user/questionnaire
+        # Check for existing DRAFT response set for this user/questionnaire/milestone
         existing_set = ResponseSet.objects.filter(
             user=user, 
             questionnaire_id=questionnaire_id,
+            milestone=milestone,
             status='DRAFT'
         ).first()
         
         if existing_set:
             serializer = self.get_serializer(existing_set)
             return DRFResponse(serializer.data, status=status.HTTP_200_OK)
+
+        # Check if they have already completed this assessment
+        if ResponseSet.objects.filter(
+            user=user,
+            questionnaire_id=questionnaire_id,
+            milestone=milestone
+        ).exists():
+            raise ValidationError({"detail": "You have already completed this assessment."})
             
         # If they already completed it (not just draft), block it based on assessment type logic
         try:
@@ -64,10 +75,19 @@ class ResponseSetListCreateView(generics.ListCreateAPIView):
             if q_obj.assessment_type == 'SOCIODEMOGRAPHIC' and user.has_completed_sociodemographic:
                 raise ValidationError({"detail": "You have already completed the sociodemographic assessment."})
             if q_obj.is_posttest:
-                if not user.is_posttest_due:
-                    raise ValidationError({"detail": "Post-test is not available yet. Complete 7 days first."})
-                if user.has_completed_posttest:
-                    raise ValidationError({"detail": "You have already completed the post-test."})
+                if milestone in [None, '7_DAYS']:
+                    if not user.is_posttest_due:
+                        raise ValidationError({"detail": "Post-test is not available yet. Complete 7 days first."})
+                    if user.has_completed_posttest:
+                        raise ValidationError({"detail": "You have already completed the post-test."})
+                elif milestone in ['3_MONTHS', '6_MONTHS', '1_YEAR']:
+                    if not user.has_completed_posttest:
+                        raise ValidationError({"detail": "You must complete the 7-day post-test first."})
+                    if user.get_due_milestone != milestone:
+                        if ResponseSet.objects.filter(user=user, status='COMPLETED', milestone=milestone).exists():
+                            raise ValidationError({"detail": f"You have already completed the {milestone} assessment."})
+                        else:
+                            raise ValidationError({"detail": f"The {milestone} assessment is not available yet."})
         except Questionnaire.DoesNotExist:
             pass
 
@@ -145,9 +165,32 @@ class ResponseSetSaveDraftView(generics.UpdateAPIView):
     def post(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
 
-class AdminPosttestResponseListView(generics.ListAPIView):
+class ResponseSetOptInView(generics.UpdateAPIView):
     """
-    Researcher-only view to list all completed Day 7 post-test assessments.
+    Endpoint to update the opt-in status for safety protocol.
+    """
+    queryset = ResponseSet.objects.all()
+    permission_classes = (permissions.IsAuthenticated,)
+    http_method_names = ['post', 'put', 'patch']
+
+    def get_queryset(self):
+        # Users can only update their own response sets
+        return super().get_queryset().filter(user=self.request.user)
+
+    def post(self, request, *args, **kwargs):
+        response_set = self.get_object()
+        opt_in = request.data.get('opt_in', False)
+        response_set.suicide_risk_opt_in = opt_in
+        response_set.save(update_fields=['suicide_risk_opt_in'])
+
+        from .tasks import refresh_suicide_risk_admin_cache_task
+        refresh_suicide_risk_admin_cache_task.delay()
+
+        return DRFResponse({'status': 'opt-in updated', 'suicide_risk_opt_in': response_set.suicide_risk_opt_in})
+
+class AdminT0ResponseListView(generics.ListAPIView):
+    """
+    Researcher-only view to list all completed T0 baseline psychometric assessments.
     """
     serializer_class = AdminResponseSetSerializer
     permission_classes = (permissions.IsAdminUser,)
@@ -155,24 +198,201 @@ class AdminPosttestResponseListView(generics.ListAPIView):
 
     def get_queryset(self):
         return ResponseSet.objects.filter(
-            questionnaire__is_posttest=True,
+            milestone='SIGNUP',
+            questionnaire__assessment_type='PSYCHOMETRIC',
             status='COMPLETED'
         ).select_related('user', 'questionnaire').order_by('-completed_at')
 
-class AdminPosttestResponseDetailView(generics.RetrieveAPIView):
+class AdminT0ResponseDetailView(generics.RetrieveAPIView):
     """
-    Researcher-only view to inspect a specific post-test submission.
+    Researcher-only view to inspect a specific T0 baseline psychometric submission.
     """
     serializer_class = AdminResponseSetSerializer
     permission_classes = (permissions.IsAdminUser,)
 
     def get_queryset(self):
         return ResponseSet.objects.filter(
-            questionnaire__is_posttest=True,
+            milestone='SIGNUP',
+            questionnaire__assessment_type='PSYCHOMETRIC',
             status='COMPLETED'
         ).select_related('user', 'questionnaire').prefetch_related(
             'responses__question',
             'responses__selected_option'
+        )
+
+
+class AdminT1ResponseListView(generics.ListAPIView):
+    """
+    Researcher-only view to list all completed T1 follow-up (Day 7) psychometric assessments.
+    """
+    serializer_class = AdminResponseSetSerializer
+    permission_classes = (permissions.IsAdminUser,)
+    pagination_class = StandardResultsSetPagination
+
+    def get_queryset(self):
+        return ResponseSet.objects.filter(
+            milestone='7_DAYS',
+            questionnaire__assessment_type='PSYCHOMETRIC',
+            status='COMPLETED'
+        ).select_related('user', 'questionnaire').order_by('-completed_at')
+
+
+class AdminT1ResponseDetailView(generics.RetrieveAPIView):
+    """
+    Researcher-only view to inspect a specific T1 follow-up (Day 7) psychometric submission.
+    """
+    serializer_class = AdminResponseSetSerializer
+    permission_classes = (permissions.IsAdminUser,)
+
+    def get_queryset(self):
+        return ResponseSet.objects.filter(
+            milestone='7_DAYS',
+            questionnaire__assessment_type='PSYCHOMETRIC',
+            status='COMPLETED'
+        ).select_related('user', 'questionnaire').prefetch_related(
+            'responses__question',
+            'responses__selected_option'
+        )
+
+
+class AdminT2ResponseListView(generics.ListAPIView):
+    """
+    Researcher-only view to list all completed T2 follow-up (Day 90) psychometric assessments.
+    """
+    serializer_class = AdminResponseSetSerializer
+    permission_classes = (permissions.IsAdminUser,)
+    pagination_class = StandardResultsSetPagination
+
+    def get_queryset(self):
+        return ResponseSet.objects.filter(
+            milestone='3_MONTHS',
+            questionnaire__assessment_type='PSYCHOMETRIC',
+            status='COMPLETED'
+        ).select_related('user', 'questionnaire').order_by('-completed_at')
+
+
+class AdminT2ResponseDetailView(generics.RetrieveAPIView):
+    """
+    Researcher-only view to inspect a specific T2 follow-up (Day 90) psychometric submission.
+    """
+    serializer_class = AdminResponseSetSerializer
+    permission_classes = (permissions.IsAdminUser,)
+
+    def get_queryset(self):
+        return ResponseSet.objects.filter(
+            milestone='3_MONTHS',
+            questionnaire__assessment_type='PSYCHOMETRIC',
+            status='COMPLETED'
+        ).select_related('user', 'questionnaire').prefetch_related(
+            'responses__question',
+            'responses__selected_option'
+        )
+
+
+class AdminT3ResponseListView(generics.ListAPIView):
+    """
+    Researcher-only view to list all completed T3 follow-up (Month 6) psychometric assessments.
+    """
+    serializer_class = AdminResponseSetSerializer
+    permission_classes = (permissions.IsAdminUser,)
+    pagination_class = StandardResultsSetPagination
+
+    def get_queryset(self):
+        return ResponseSet.objects.filter(
+            milestone='6_MONTHS',
+            questionnaire__assessment_type='PSYCHOMETRIC',
+            status='COMPLETED'
+        ).select_related('user', 'questionnaire').order_by('-completed_at')
+
+
+class AdminT3ResponseDetailView(generics.RetrieveAPIView):
+    """
+    Researcher-only view to inspect a specific T3 follow-up (Month 6) psychometric submission.
+    """
+    serializer_class = AdminResponseSetSerializer
+    permission_classes = (permissions.IsAdminUser,)
+
+    def get_queryset(self):
+        return ResponseSet.objects.filter(
+            milestone='6_MONTHS',
+            questionnaire__assessment_type='PSYCHOMETRIC',
+            status='COMPLETED'
+        ).select_related('user', 'questionnaire').prefetch_related(
+            'responses__question',
+            'responses__selected_option'
+        )
+
+
+class AdminT4ResponseListView(generics.ListAPIView):
+    """
+    Researcher-only view to list all completed T4 follow-up (Month 12) psychometric assessments.
+    """
+    serializer_class = AdminResponseSetSerializer
+    permission_classes = (permissions.IsAdminUser,)
+    pagination_class = StandardResultsSetPagination
+
+    def get_queryset(self):
+        return ResponseSet.objects.filter(
+            milestone='1_YEAR',
+            questionnaire__assessment_type='PSYCHOMETRIC',
+            status='COMPLETED'
+        ).select_related('user', 'questionnaire').order_by('-completed_at')
+
+
+class AdminT4ResponseDetailView(generics.RetrieveAPIView):
+    """
+    Researcher-only view to inspect a specific T4 follow-up (Month 12) psychometric submission.
+    """
+    serializer_class = AdminResponseSetSerializer
+    permission_classes = (permissions.IsAdminUser,)
+
+    def get_queryset(self):
+        return ResponseSet.objects.filter(
+            milestone='1_YEAR',
+            questionnaire__assessment_type='PSYCHOMETRIC',
+            status='COMPLETED'
+        ).select_related('user', 'questionnaire').prefetch_related(
+            'responses__question',
+            'responses__selected_option'
+        )
+
+
+class AdminSuicideRiskFollowUpsView(APIView):
+    """
+    Admin dashboard data for suicide-risk flagged participants.
+    Served from Redis cache, refreshed automatically on opt-in/risk events and daily via Celery.
+    """
+    permission_classes = (permissions.IsAdminUser,)
+
+    def get(self, request):
+        from .safety_cache import get_suicide_risk_admin_cache
+
+        show = request.query_params.get("show", "opt_in")
+        payload = get_suicide_risk_admin_cache(refresh_if_missing=True)
+        if not payload:
+            return DRFResponse(
+                {
+                    "last_refreshed_at": None,
+                    "total_flagged": 0,
+                    "opt_in_count": 0,
+                    "cases": [],
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        if show == "all":
+            cases = payload["cases"]
+        else:
+            cases = payload["opt_in_cases"]
+
+        return DRFResponse(
+            {
+                "last_refreshed_at": payload["last_refreshed_at"],
+                "total_flagged": payload["total_flagged"],
+                "opt_in_count": payload["opt_in_count"],
+                "cases": cases,
+            },
+            status=status.HTTP_200_OK,
         )
 
 

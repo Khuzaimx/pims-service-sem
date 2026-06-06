@@ -12,6 +12,7 @@ const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children, requireAdmi
   // Get fresh auth status from localStorage
   const isAuthenticated = !!localStorage.getItem('access_token');
   const userRole = localStorage.getItem('user_role');
+  const isDisqualified = localStorage.getItem('is_disqualified') === 'true';
   const hasCompletedSociodemographic = localStorage.getItem('has_completed_sociodemographic') === 'true';
 
   if (!isAuthenticated) {
@@ -24,12 +25,29 @@ const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children, requireAdmi
     return <>{children}</>;
   }
 
+  if (isDisqualified) {
+    if (location.pathname !== '/dashboard') {
+      return <Navigate to="/dashboard" replace />;
+    }
+    return <>{children}</>;
+  }
+
   if (requireAdmin && userRole !== 'Admin') {
     return <Navigate to="/dashboard" replace />;
   }
 
   // Participant Redirection Logic
-  if (!hasCompletedSociodemographic) {
+  const dueMilestone = localStorage.getItem('due_milestone');
+
+  if (dueMilestone === 'SIGNUP') {
+    // allow access to /sociodemographic AND active questionnaire IDs
+    const isAllowedPath = location.pathname === '/sociodemographic' || 
+                         location.pathname.startsWith('/questionnaire/');
+                         
+    if (!isAllowedPath) {
+      return <Navigate to="/sociodemographic" replace />;
+    }
+  } else if (!hasCompletedSociodemographic) {
     // allow access to /sociodemographic AND active questionnaire IDs
     const isAllowedPath = location.pathname === '/sociodemographic' || 
                          location.pathname.startsWith('/questionnaire/');

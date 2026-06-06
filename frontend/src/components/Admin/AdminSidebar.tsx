@@ -3,9 +3,10 @@ import { NavLink } from 'react-router-dom';
 import {
   Users,
   LayoutDashboard,
-  Database,
   ClipboardCheck,
-  MessageSquare
+  MessageSquare,
+  PhoneCall,
+  ShieldAlert
 } from 'lucide-react';
 import api from '../../services/api';
 import { useNotifications } from '../../hooks/useNotifications';
@@ -36,9 +37,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onNavigate }) => {
 
   const navItems = [
     { label: 'Overview', path: '/admin', icon: <LayoutDashboard size={18} /> },
-    { label: 'Post-Test Data', path: '/admin/posttest-data', icon: <ClipboardCheck size={18} /> },
+    { label: 'T0 Results', path: '/admin/t0-data', icon: <ClipboardCheck size={18} /> },
+    { label: 'T1 Results', path: '/admin/t1-data', icon: <ClipboardCheck size={18} /> },
+    { label: 'T2 Results', path: '/admin/t2-data', icon: <ClipboardCheck size={18} /> },
+    { label: 'T3 Results', path: '/admin/t3-data', icon: <ClipboardCheck size={18} /> },
+    { label: 'T4 Results', path: '/admin/t4-data', icon: <ClipboardCheck size={18} /> },
     { label: 'Groups Management', path: '/admin/groups', icon: <Users size={18} /> },
     { label: 'User Queries', path: '/admin/support-queries', icon: <MessageSquare size={18} />, badge: openQueriesCount },
+    { label: 'Follow-ups', path: '/admin/follow-ups', icon: <PhoneCall size={18} /> },
+    { label: 'Safety Risk', path: '/admin/safety-risk', icon: <ShieldAlert size={18} /> },
   ];
 
   return (

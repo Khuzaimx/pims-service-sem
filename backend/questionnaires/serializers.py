@@ -1,5 +1,132 @@
+import logging
 from rest_framework import serializers
 from .models import Questionnaire, Question, Option, ResponseSet, Response
+from .scoring import calculate_and_save_scores
+
+logger = logging.getLogger(__name__)
+
+
+def check_and_trigger_risk_protocol(response_set):
+    """
+    Checks if the response set contains a high risk answer:
+    - PHQ-9 Item 9 >= 1
+    - SIDAS Item 3 > 0
+    - SIDAS Total >= 21
+    and triggers a risk-protocol alert if found.
+    """
+    from django.core.cache import cache
+    from django.contrib.auth import get_user_model
+    from notifications.models import Notification
+    from django.utils import timezone
+
+    triggered = False
+    reasons = []
+
+    # 1. PHQ-9 Item 9 >= 1
+    item_9_response = Response.objects.filter(
+        response_set=response_set,
+        question__order=32
+    ).first()
+    if not item_9_response:
+        item_9_response = Response.objects.filter(
+            response_set=response_set,
+            question__content__icontains="[PHQ-9]"
+        ).filter(
+            question__content__icontains="dead"
+        ).first()
+
+    if item_9_response and item_9_response.selected_option:
+        val = item_9_response.selected_option.numeric_value
+        if val >= 1:
+            triggered = True
+            reasons.append(f"PHQ-9 Item 9 with score {val} (Suicidal Ideation/Self-Harm)")
+
+    # 2. SIDAS Item 3 > 0 (closeness to attempt)
+    sidas_3_response = Response.objects.filter(
+        response_set=response_set,
+        question__order=77
+    ).first()
+    if sidas_3_response and sidas_3_response.selected_option:
+        val_sidas_3 = sidas_3_response.selected_option.numeric_value
+        if val_sidas_3 > 0:
+            triggered = True
+            reasons.append(f"SIDAS Item 3 with score {val_sidas_3} (Closeness to suicide attempt)")
+
+    # 3. SIDAS Total >= 21
+    sidas_total = response_set.scores.get('SIDAS_TOTAL')
+    if sidas_total is not None and sidas_total >= 21:
+        triggered = True
+        reasons.append(f"SIDAS Total with score {sidas_total} (High suicide risk)")
+
+    if triggered:
+        if not response_set.suicide_risk_triggered:
+            response_set.suicide_risk_triggered = True
+            response_set.save(update_fields=['suicide_risk_triggered'])
+
+        cache_key = f"risk_alert_triggered_{response_set.id}"
+        
+        if not cache.get(cache_key):
+            cache.set(cache_key, True, timeout=86400)
+            
+            user = response_set.user
+            reasons_str = ", ".join(reasons)
+            
+            logger.critical(
+                "RISK PROTOCOL ALERT: User %s (ID: %s, Email: %s) flagged for suicidal risk: %s.",
+                user.username, user.id, user.email, reasons_str
+            )
+            
+            from notifications.tasks import send_notification
+            
+            # 1. Create and send participant safety panel resources (Email + WhatsApp)
+            participant_message = (
+                "Your responses suggest you may be experiencing distress. To protect your well-being, "
+                "please reach out to one of the support services below. You are not alone.\n\n"
+                "Umang 0311-7786264 (24/7, free, multilingual)\n"
+                "Taskeen 0316-8275336 (Mon–Sat 11am–11pm) + 24/7 chatbot at taskeen.org\n"
+                "Rozan 0304-1118666 / 0800-22444 (Mon–Sat)\n"
+                "Emergency Rescue 1122, Edhi 115, Chhipa 1020"
+            )
+            
+            p_email = Notification.objects.create(
+                user=user,
+                n_type='email',
+                message=participant_message,
+                scheduled_time=timezone.now(),
+                status='pending'
+            )
+            from django.db import transaction
+            transaction.on_commit(lambda: send_notification.delay(p_email.id))
+            
+            p_whatsapp = Notification.objects.create(
+                user=user,
+                n_type='whatsapp',
+                message=participant_message,
+                scheduled_time=timezone.now(),
+                status='pending'
+            )
+            transaction.on_commit(lambda: send_notification.delay(p_whatsapp.id))
+            
+            # 2. Notify admins
+            User = get_user_model()
+            admins = User.objects.filter(is_staff=True)
+            for admin in admins:
+                admin_notif = Notification.objects.create(
+                    user=admin,
+                    n_type='email',
+                    message=(
+                        f"CRITICAL SAFETY ALERT: Participant '{user.username}' (ID: {user.id}) "
+                        f"has triggered suicidal risk protocols. Reasons: {reasons_str}. "
+                        f"Immediate clinical follow-up required."
+                    ),
+                    scheduled_time=timezone.now(),
+                    status='pending'
+                )
+                transaction.on_commit(lambda admin_notif_id=admin_notif.id: send_notification.delay(admin_notif_id))
+
+            from .tasks import refresh_suicide_risk_admin_cache_task
+            transaction.on_commit(lambda: refresh_suicide_risk_admin_cache_task.delay())
+
 
 class OptionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -32,8 +159,8 @@ class ResponseSetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ResponseSet
-        fields = ['id', 'user', 'questionnaire', 'questionnaire_title', 'status', 'started_at', 'completed_at', 'responses', 'milestone']
-        read_only_fields = ['user', 'started_at', 'completed_at', 'status']
+        fields = ['id', 'user', 'questionnaire', 'questionnaire_title', 'status', 'started_at', 'completed_at', 'responses', 'milestone', 'suicide_risk_triggered', 'suicide_risk_opt_in']
+        read_only_fields = ['user', 'started_at', 'completed_at', 'status', 'suicide_risk_triggered', 'suicide_risk_opt_in']
 
 class ResponseSetDetailSerializer(serializers.ModelSerializer):
     """Full detail serializer with nested questionnaire for the Results page."""
@@ -42,7 +169,7 @@ class ResponseSetDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ResponseSet
-        fields = ['id', 'user', 'questionnaire', 'status', 'started_at', 'completed_at', 'responses']
+        fields = ['id', 'user', 'questionnaire', 'status', 'started_at', 'completed_at', 'responses', 'suicide_risk_triggered', 'suicide_risk_opt_in']
 
 class AdminResponseSerializer(serializers.ModelSerializer):
     question_text = serializers.CharField(source='question.content', read_only=True)
@@ -92,7 +219,8 @@ class ResponseSetSubmitSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ResponseSet
-        fields = ['id', 'responses_data']
+        fields = ['id', 'responses_data', 'suicide_risk_triggered', 'suicide_risk_opt_in']
+        read_only_fields = ['suicide_risk_triggered', 'suicide_risk_opt_in']
 
     def validate(self, attrs):
         response_set = self.instance
@@ -147,15 +275,19 @@ class ResponseSetSubmitSerializer(serializers.ModelSerializer):
             instance.completed_at = timezone.now()
             instance.save()
 
-            # 4. Handle Onboarding Completions (Sociodemographic)
             user = instance.user
             if instance.questionnaire.assessment_type == 'SOCIODEMOGRAPHIC':
                 is_disqualified = False
                 for item in responses_data:
                     option = item.get('selected_option')
-                    if option and 'DISQUALIFY' in option.label:
-                        is_disqualified = True
-                        break
+                    question = item.get('question')
+                    if option:
+                        if 'DISQUALIFY' in option.label:
+                            is_disqualified = True
+                            break
+                        if question and question.order in (11, 12) and option.numeric_value == 1:
+                            is_disqualified = True
+                            break
                 
                 if is_disqualified:
                     user.is_disqualified = True
@@ -164,8 +296,12 @@ class ResponseSetSubmitSerializer(serializers.ModelSerializer):
                 else:
                     assign_user_to_group(user)
                     user.has_completed_sociodemographic = True
-                    user.onboarding_completed_at = timezone.now()
-                    user.save(update_fields=['has_completed_sociodemographic', 'onboarding_completed_at'])
+                    user.save(update_fields=['has_completed_sociodemographic'])
+
+            # 4.5. Set onboarding_completed_at when SIGNUP milestone of PSYCHOMETRIC questionnaire is completed
+            if instance.milestone == 'SIGNUP' and instance.questionnaire.assessment_type == 'PSYCHOMETRIC':
+                user.onboarding_completed_at = timezone.now()
+                user.save(update_fields=['onboarding_completed_at'])
 
             # 5. Mark post-test completed if milestone is '7_DAYS' or is_legacy_posttest
             is_legacy_posttest = instance.questionnaire.is_posttest
@@ -178,6 +314,12 @@ class ResponseSetSubmitSerializer(serializers.ModelSerializer):
             from django.core.cache import cache
             cache.delete(f"user_{user.id}_due_milestone")
 
+            # Calculate and save scores
+            calculate_and_save_scores(instance)
+
+            # Check and trigger risk-protocol alert
+            check_and_trigger_risk_protocol(instance)
+
         return instance
 
 class ResponseSetDraftSerializer(serializers.ModelSerializer):
@@ -189,7 +331,8 @@ class ResponseSetDraftSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ResponseSet
-        fields = ['id', 'responses_data']
+        fields = ['id', 'responses_data', 'suicide_risk_triggered', 'suicide_risk_opt_in']
+        read_only_fields = ['suicide_risk_triggered', 'suicide_risk_opt_in']
 
     def validate(self, attrs):
         response_set = self.instance
@@ -236,5 +379,11 @@ class ResponseSetDraftSerializer(serializers.ModelSerializer):
             
             # Note: We do NOT mark status = 'COMPLETED' or set completed_at
             instance.save()
+
+            # Calculate and save scores on draft saving
+            calculate_and_save_scores(instance)
+
+            # Check and trigger risk-protocol alert on draft saving
+            check_and_trigger_risk_protocol(instance)
 
         return instance

@@ -255,6 +255,7 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = False
 
 # Celery Test Settings
 if 'test' in sys.argv or 'pytest' in sys.modules:
@@ -273,6 +274,18 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'notifications.tasks.check_and_send_daily_reminders',
         'schedule': crontab(hour=18, minute=0),
         'args': ('evening',),
+    },
+    'tier3-daily-evaluation': {
+        'task': 'notifications.tasks.run_tier3_daily_evaluation',
+        'schedule': crontab(hour=1, minute=0),
+    },
+    'assessment-graduated-reminders': {
+        'task': 'notifications.tasks.run_assessment_graduated_reminders',
+        'schedule': crontab(hour=2, minute=0),
+    },
+    'daily-suicide-risk-admin-cache': {
+        'task': 'questionnaires.tasks.refresh_suicide_risk_admin_cache_task',
+        'schedule': crontab(hour=3, minute=0),
     },
 }
 # Spectacular Settings

@@ -12,6 +12,7 @@ class UserSerializer(serializers.ModelSerializer):
     """
     group_name = serializers.ReadOnlyField(source='group.name')
     role_name = serializers.ReadOnlyField(source='role.name')
+    due_milestone = serializers.CharField(source='get_due_milestone', read_only=True)
 
     class Meta:
         model = User
@@ -20,10 +21,15 @@ class UserSerializer(serializers.ModelSerializer):
             'whatsapp_number', 'date_of_birth', 'role', 'role_name', 
             'group', 'group_name', 'traits', 'created_at',
             'has_completed_sociodemographic',
-            'has_completed_posttest', 'is_posttest_due',
-            'completion_rate',
+            'has_completed_posttest', 'is_posttest_due', 'due_milestone',
+            'completion_rate', 'has_consecutive_misses', 'consecutive_misses_message',
+            'has_two_consecutive_missed_waves', 'is_disqualified',
         )
-        read_only_fields = ('created_at', 'has_completed_sociodemographic', 'has_completed_posttest', 'is_posttest_due', 'completion_rate',)
+        read_only_fields = (
+            'created_at', 'has_completed_sociodemographic', 'has_completed_posttest',
+            'is_posttest_due', 'due_milestone', 'completion_rate', 'has_consecutive_misses',
+            'consecutive_misses_message', 'has_two_consecutive_missed_waves', 'is_disqualified',
+        )
 
 class SignupSerializer(serializers.ModelSerializer):
     """
@@ -61,7 +67,7 @@ class SignupSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError("Date of birth is mandatory.")
         
-        today = timezone.now().date()
+        today = timezone.localdate()
         age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
         
         if age < 15 or age > 80:
@@ -138,7 +144,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         else:
             dob_str = None
             
-        # Add extra user information to the response
         data['user'] = {
             'id': self.user.pk,
             'username': self.user.username,
@@ -149,6 +154,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'has_completed_sociodemographic': self.user.has_completed_sociodemographic,
             'has_completed_posttest': self.user.has_completed_posttest,
             'is_posttest_due': self.user.is_posttest_due,
+            'due_milestone': self.user.get_due_milestone,
+            'is_disqualified': self.user.is_disqualified,
         }
         
         return data

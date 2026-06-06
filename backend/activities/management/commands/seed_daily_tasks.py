@@ -28,12 +28,14 @@ GROUP_PROMPTS = {
         "منتخب کریں، ایک ہی شکر گزاری بار بار نہ دہرائیں۔"
     ),
     'Group 3': (
-        'Before going to sleep, write down one thing from each of the following from your day:\n'
-        '- Something that gave you pleasure or made you smile\n'
-        '- Something you were so absorbed in you lost track of time\n'
-        '- A meaningful interaction you had with someone\n'
-        '- Something that felt purposeful or significant to you\n'
-        '- Something you did well or accomplished today'
+        "Today's task: Reflect on the past 24 hours. For each of the three categories below, "
+        "write about one specific event from today. For each event: describe what happened "
+        "and who was involved; explain why it happened or what made it possible. Choose "
+        "different events for each category. Pick experiences from today only. | "
+        "آج کا کام: گزشتہ 24 گھنٹوں پر غور کریں۔ نیچے دی گئی تین اقسام میں سے ہر ایک کے لیے، "
+        "آج کا ایک مخصوص واقعہ تحریر کریں۔ ہر واقعے کے بارے میں: بیان کریں کہ کیا ہوا اور "
+        "کون شامل تھا؛ وضاحت کریں کہ یہ کیوں ہوا یا کس چیز نے اسے ممکن بنایا۔ ہر زمرے کے لیے "
+        "مختلف واقعہ منتخب کریں۔ صرف آج کے تجربات کا انتخاب کریں۔"
     ),
     'Group 4': (
         'Before going to sleep, write down the following:\n'

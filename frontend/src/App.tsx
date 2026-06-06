@@ -12,8 +12,14 @@ const ActivityPage = lazy(() => import('./pages/ActivityPage'));
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
 const GroupsManagementPage = lazy(() => import('./pages/GroupsManagementPage'));
 const GroupDetailPage = lazy(() => import('./pages/GroupDetailPage'));
-const AdminPosttestResultsPage = lazy(() => import('./pages/AdminPosttestResultsPage'));
+const AdminT0ResultsPage = lazy(() => import('./pages/AdminT0ResultsPage'));
+const AdminT1ResultsPage = lazy(() => import('./pages/AdminT1ResultsPage'));
+const AdminT2ResultsPage = lazy(() => import('./pages/AdminT2ResultsPage'));
+const AdminT3ResultsPage = lazy(() => import('./pages/AdminT3ResultsPage'));
+const AdminT4ResultsPage = lazy(() => import('./pages/AdminT4ResultsPage'));
 const AdminSupportQueriesPage = lazy(() => import('./pages/AdminSupportQueriesPage'));
+const AdminFollowUpsPage = lazy(() => import('./pages/AdminFollowUpsPage'));
+const AdminSuicideRiskPage = lazy(() => import('./pages/AdminSuicideRiskPage'));
 const AdminLayout = lazy(() => import('./components/Admin/AdminLayout'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ResultsPage = lazy(() => import('./pages/ResultsPage'));
@@ -63,8 +69,14 @@ const App: React.FC = () => {
                   <Route path="/admin" element={<AdminDashboardPage />} />
                   <Route path="/admin/groups" element={<GroupsManagementPage />} />
                   <Route path="/admin/groups/:id" element={<GroupDetailPage />} />
-                 <Route path="/admin/posttest-data" element={<AdminPosttestResultsPage />} />
+                 <Route path="/admin/t0-data" element={<AdminT0ResultsPage />} />
+                 <Route path="/admin/t1-data" element={<AdminT1ResultsPage />} />
+                 <Route path="/admin/t2-data" element={<AdminT2ResultsPage />} />
+                 <Route path="/admin/t3-data" element={<AdminT3ResultsPage />} />
+                 <Route path="/admin/t4-data" element={<AdminT4ResultsPage />} />
                  <Route path="/admin/support-queries" element={<AdminSupportQueriesPage />} />
+                 <Route path="/admin/follow-ups" element={<AdminFollowUpsPage />} />
+                 <Route path="/admin/safety-risk" element={<AdminSuicideRiskPage />} />
               </Route>
 
               {/* Fallback */}

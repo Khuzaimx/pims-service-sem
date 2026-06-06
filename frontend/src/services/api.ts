@@ -66,6 +66,7 @@ export const groupsApi = {
   list: () => api.get('/groups/'),
   getDetail: (groupId: number) => api.get(`/groups/${groupId}/`),
   toggleActive: (groupId: number) => api.post(`/groups/${groupId}/toggle_active/`),
+  update: (groupId: number, data: { name: string; description: string }) => api.patch(`/groups/${groupId}/`, data),
 };
 
 export const questionnairesApi = {
@@ -78,15 +79,37 @@ export const questionnairesApi = {
     api.post(`/questionnaires/response-sets/${responseSetId}/submit/`, { responses_data: responsesData }),
   saveDraftResponseSet: (responseSetId: string, responsesData: any[]) =>
     api.post(`/questionnaires/response-sets/${responseSetId}/save-draft/`, { responses_data: responsesData }),
+  submitOptIn: (responseSetId: string, optIn: boolean) =>
+    api.post(`/questionnaires/response-sets/${responseSetId}/opt-in/`, { opt_in: optIn }),
 
   // Administrative Operations
   getAnalyticsSummary: () => api.get('/questionnaires/analytics/all/'),
 
-  getAdminPosttestResponses: (page: number = 1) => api.get(`/questionnaires/posttests/?page=${page}`),
-  getAdminPosttestDetail: (id: string) => api.get(`/questionnaires/posttests/${id}/`),
+  getAdminT0Responses: (page: number = 1) => api.get(`/questionnaires/t0-results/?page=${page}`),
+  getAdminT0Detail: (id: string) => api.get(`/questionnaires/t0-results/${id}/`),
+  getAdminT1Responses: (page: number = 1) => api.get(`/questionnaires/t1-results/?page=${page}`),
+  getAdminT1Detail: (id: string) => api.get(`/questionnaires/t1-results/${id}/`),
+  getAdminT2Responses: (page: number = 1) => api.get(`/questionnaires/t2-results/?page=${page}`),
+  getAdminT2Detail: (id: string) => api.get(`/questionnaires/t2-results/${id}/`),
+  getAdminT3Responses: (page: number = 1) => api.get(`/questionnaires/t3-results/?page=${page}`),
+  getAdminT3Detail: (id: string) => api.get(`/questionnaires/t3-results/${id}/`),
+  getAdminT4Responses: (page: number = 1) => api.get(`/questionnaires/t4-results/?page=${page}`),
+  getAdminT4Detail: (id: string) => api.get(`/questionnaires/t4-results/${id}/`),
   getDashboardAnalytics: () => api.get('/admin/tools/dashboard-analytics/'),
 
-  triggerAdminPosttestExport: (groupName?: string) => api.post('/admin/tools/export/posttests/csv/', {
+  triggerAdminT0Export: (groupName?: string) => api.post('/admin/tools/export/t0/csv/', {
+    group: groupName || 'All'
+  }),
+  triggerAdminT1Export: (groupName?: string) => api.post('/admin/tools/export/t1/csv/', {
+    group: groupName || 'All'
+  }),
+  triggerAdminT2Export: (groupName?: string) => api.post('/admin/tools/export/t2/csv/', {
+    group: groupName || 'All'
+  }),
+  triggerAdminT3Export: (groupName?: string) => api.post('/admin/tools/export/t3/csv/', {
+    group: groupName || 'All'
+  }),
+  triggerAdminT4Export: (groupName?: string) => api.post('/admin/tools/export/t4/csv/', {
     group: groupName || 'All'
   }),
   triggerAdminLongitudinalExport: (groupName?: string) => api.post('/admin/tools/export/longitudinal/csv/', {
@@ -105,5 +128,6 @@ export const activitiesApi = {
 // Aliases for compatibility with upstream UI components
 export const getGroups = groupsApi.list;
 export const getGroupDetail = groupsApi.getDetail;
+export const updateGroup = groupsApi.update;
 
 export default api;
