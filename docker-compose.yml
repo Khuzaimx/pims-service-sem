@@ -1,7 +1,15 @@
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: public.ecr.aws/docker/library/postgres:15-alpine
     container_name: psych_db
+    restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-psych_db}
       POSTGRES_USER: ${POSTGRES_USER:-psych_user}
@@ -19,6 +27,8 @@ services:
   redis:
     image: public.ecr.aws/docker/library/redis:7-alpine
     container_name: psych_redis
+    restart: unless-stopped
+    logging: *default-logging
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
@@ -30,6 +40,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: psych_backend
+    restart: unless-stopped
+    logging: *default-logging
     volumes:
       - ./backend:/app
       - static_volume:/app/staticfiles
@@ -57,6 +69,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: psych_celery_worker
+    restart: unless-stopped
+    logging: *default-logging
     volumes:
       - ./backend:/app
       - media_volume:/app/media
@@ -80,6 +94,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: psych_celery_beat
+    restart: unless-stopped
+    logging: *default-logging
     volumes:
       - ./backend:/app
     environment:
@@ -104,6 +120,8 @@ services:
       args:
         - VITE_API_URL=${VITE_API_URL}
     container_name: psych_frontend
+    restart: unless-stopped
+    logging: *default-logging
     environment:
       VITE_API_URL: ${VITE_API_URL}
     depends_on:
@@ -114,6 +132,8 @@ services:
       context: ./nginx
       dockerfile: Dockerfile
     container_name: psych_nginx
+    restart: unless-stopped
+    logging: *default-logging
     ports:
       - "4756:80"
     volumes:
