@@ -375,6 +375,9 @@ class AdminSuicideRiskFollowUpsView(APIView):
                     "last_refreshed_at": None,
                     "total_flagged": 0,
                     "opt_in_count": 0,
+                    "count": 0,
+                    "next": False,
+                    "previous": False,
                     "cases": [],
                 },
                 status=status.HTTP_200_OK,
@@ -385,12 +388,30 @@ class AdminSuicideRiskFollowUpsView(APIView):
         else:
             cases = payload["opt_in_cases"]
 
+        # Manual Pagination
+        page_size = 10
+        try:
+            page = int(request.query_params.get("page", 1))
+        except ValueError:
+            page = 1
+
+        total_cases = len(cases)
+        start = (page - 1) * page_size
+        end = start + page_size
+
+        paginated_cases = cases[start:end]
+        has_next = end < total_cases
+        has_previous = start > 0
+
         return DRFResponse(
             {
                 "last_refreshed_at": payload["last_refreshed_at"],
                 "total_flagged": payload["total_flagged"],
                 "opt_in_count": payload["opt_in_count"],
-                "cases": cases,
+                "count": total_cases,
+                "next": has_next,
+                "previous": has_previous,
+                "cases": paginated_cases,
             },
             status=status.HTTP_200_OK,
         )
