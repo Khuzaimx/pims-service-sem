@@ -74,13 +74,13 @@ class ResponseSetListCreateView(generics.ListCreateAPIView):
             q_obj = Questionnaire.objects.get(id=questionnaire_id)
             if q_obj.assessment_type == 'SOCIODEMOGRAPHIC' and user.has_completed_sociodemographic:
                 raise ValidationError({"detail": "You have already completed the sociodemographic assessment."})
-            if q_obj.is_posttest:
+            if q_obj.is_posttest or (q_obj.assessment_type == 'PSYCHOMETRIC' and milestone != 'SIGNUP'):
                 if milestone in [None, '7_DAYS']:
                     if not user.is_posttest_due:
                         raise ValidationError({"detail": "Post-test is not available yet. Complete 7 days first."})
                     if user.has_completed_posttest:
                         raise ValidationError({"detail": "You have already completed the post-test."})
-                elif milestone in ['3_MONTHS', '6_MONTHS', '1_YEAR']:
+                elif milestone in ['1_MONTH', '3_MONTHS', '6_MONTHS', '1_YEAR']:
                     if not user.has_completed_posttest:
                         raise ValidationError({"detail": "You must complete the 7-day post-test first."})
                     if user.get_due_milestone != milestone:
@@ -201,7 +201,10 @@ class AdminT0ResponseListView(generics.ListAPIView):
             milestone='SIGNUP',
             questionnaire__assessment_type='PSYCHOMETRIC',
             status='COMPLETED'
-        ).select_related('user', 'questionnaire').order_by('-completed_at')
+        ).select_related('user__group', 'questionnaire').prefetch_related(
+            'responses__question',
+            'responses__selected_option'
+        ).order_by('-completed_at')
 
 class AdminT0ResponseDetailView(generics.RetrieveAPIView):
     """
@@ -215,7 +218,7 @@ class AdminT0ResponseDetailView(generics.RetrieveAPIView):
             milestone='SIGNUP',
             questionnaire__assessment_type='PSYCHOMETRIC',
             status='COMPLETED'
-        ).select_related('user', 'questionnaire').prefetch_related(
+        ).select_related('user__group', 'questionnaire').prefetch_related(
             'responses__question',
             'responses__selected_option'
         )
@@ -234,7 +237,10 @@ class AdminT1ResponseListView(generics.ListAPIView):
             milestone='7_DAYS',
             questionnaire__assessment_type='PSYCHOMETRIC',
             status='COMPLETED'
-        ).select_related('user', 'questionnaire').order_by('-completed_at')
+        ).select_related('user__group', 'questionnaire').prefetch_related(
+            'responses__question',
+            'responses__selected_option'
+        ).order_by('-completed_at')
 
 
 class AdminT1ResponseDetailView(generics.RetrieveAPIView):
@@ -247,6 +253,40 @@ class AdminT1ResponseDetailView(generics.RetrieveAPIView):
     def get_queryset(self):
         return ResponseSet.objects.filter(
             milestone='7_DAYS',
+            questionnaire__assessment_type='PSYCHOMETRIC',
+            status='COMPLETED'
+        ).select_related('user__group', 'questionnaire').prefetch_related(
+            'responses__question',
+            'responses__selected_option'
+        )
+
+
+class AdminTFirstMonthResponseListView(generics.ListAPIView):
+    """
+    Researcher-only view to list all completed T-First-Month follow-up (Day 30) psychometric assessments.
+    """
+    serializer_class = AdminResponseSetSerializer
+    permission_classes = (permissions.IsAdminUser,)
+    pagination_class = StandardResultsSetPagination
+
+    def get_queryset(self):
+        return ResponseSet.objects.filter(
+            milestone='1_MONTH',
+            questionnaire__assessment_type='PSYCHOMETRIC',
+            status='COMPLETED'
+        ).select_related('user', 'questionnaire').order_by('-completed_at')
+
+
+class AdminTFirstMonthResponseDetailView(generics.RetrieveAPIView):
+    """
+    Researcher-only view to inspect a specific T-First-Month follow-up (Day 30) psychometric submission.
+    """
+    serializer_class = AdminResponseSetSerializer
+    permission_classes = (permissions.IsAdminUser,)
+
+    def get_queryset(self):
+        return ResponseSet.objects.filter(
+            milestone='1_MONTH',
             questionnaire__assessment_type='PSYCHOMETRIC',
             status='COMPLETED'
         ).select_related('user', 'questionnaire').prefetch_related(
@@ -268,7 +308,10 @@ class AdminT2ResponseListView(generics.ListAPIView):
             milestone='3_MONTHS',
             questionnaire__assessment_type='PSYCHOMETRIC',
             status='COMPLETED'
-        ).select_related('user', 'questionnaire').order_by('-completed_at')
+        ).select_related('user__group', 'questionnaire').prefetch_related(
+            'responses__question',
+            'responses__selected_option'
+        ).order_by('-completed_at')
 
 
 class AdminT2ResponseDetailView(generics.RetrieveAPIView):
@@ -283,7 +326,7 @@ class AdminT2ResponseDetailView(generics.RetrieveAPIView):
             milestone='3_MONTHS',
             questionnaire__assessment_type='PSYCHOMETRIC',
             status='COMPLETED'
-        ).select_related('user', 'questionnaire').prefetch_related(
+        ).select_related('user__group', 'questionnaire').prefetch_related(
             'responses__question',
             'responses__selected_option'
         )
@@ -302,7 +345,10 @@ class AdminT3ResponseListView(generics.ListAPIView):
             milestone='6_MONTHS',
             questionnaire__assessment_type='PSYCHOMETRIC',
             status='COMPLETED'
-        ).select_related('user', 'questionnaire').order_by('-completed_at')
+        ).select_related('user__group', 'questionnaire').prefetch_related(
+            'responses__question',
+            'responses__selected_option'
+        ).order_by('-completed_at')
 
 
 class AdminT3ResponseDetailView(generics.RetrieveAPIView):
@@ -317,7 +363,7 @@ class AdminT3ResponseDetailView(generics.RetrieveAPIView):
             milestone='6_MONTHS',
             questionnaire__assessment_type='PSYCHOMETRIC',
             status='COMPLETED'
-        ).select_related('user', 'questionnaire').prefetch_related(
+        ).select_related('user__group', 'questionnaire').prefetch_related(
             'responses__question',
             'responses__selected_option'
         )
@@ -336,7 +382,10 @@ class AdminT4ResponseListView(generics.ListAPIView):
             milestone='1_YEAR',
             questionnaire__assessment_type='PSYCHOMETRIC',
             status='COMPLETED'
-        ).select_related('user', 'questionnaire').order_by('-completed_at')
+        ).select_related('user__group', 'questionnaire').prefetch_related(
+            'responses__question',
+            'responses__selected_option'
+        ).order_by('-completed_at')
 
 
 class AdminT4ResponseDetailView(generics.RetrieveAPIView):
@@ -351,7 +400,7 @@ class AdminT4ResponseDetailView(generics.RetrieveAPIView):
             milestone='1_YEAR',
             questionnaire__assessment_type='PSYCHOMETRIC',
             status='COMPLETED'
-        ).select_related('user', 'questionnaire').prefetch_related(
+        ).select_related('user__group', 'questionnaire').prefetch_related(
             'responses__question',
             'responses__selected_option'
         )
@@ -375,6 +424,9 @@ class AdminSuicideRiskFollowUpsView(APIView):
                     "last_refreshed_at": None,
                     "total_flagged": 0,
                     "opt_in_count": 0,
+                    "count": 0,
+                    "next": False,
+                    "previous": False,
                     "cases": [],
                 },
                 status=status.HTTP_200_OK,
@@ -385,12 +437,30 @@ class AdminSuicideRiskFollowUpsView(APIView):
         else:
             cases = payload["opt_in_cases"]
 
+        # Manual Pagination
+        page_size = 10
+        try:
+            page = int(request.query_params.get("page", 1))
+        except ValueError:
+            page = 1
+
+        total_cases = len(cases)
+        start = (page - 1) * page_size
+        end = start + page_size
+
+        paginated_cases = cases[start:end]
+        has_next = end < total_cases
+        has_previous = start > 0
+
         return DRFResponse(
             {
                 "last_refreshed_at": payload["last_refreshed_at"],
                 "total_flagged": payload["total_flagged"],
                 "opt_in_count": payload["opt_in_count"],
-                "cases": cases,
+                "count": total_cases,
+                "next": has_next,
+                "previous": has_previous,
+                "cases": paginated_cases,
             },
             status=status.HTTP_200_OK,
         )

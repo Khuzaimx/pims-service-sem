@@ -40,7 +40,7 @@ interface PosttestSet {
   responses?: RawResponse[];
 }
 
-const AdminT3ResultsPage: React.FC = () => {
+const AdminTFirstMonthResultsPage: React.FC = () => {
   const [submissions, setSubmissions] = useState<PosttestSet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +60,7 @@ const AdminT3ResultsPage: React.FC = () => {
   const fetchSubmissions = async (page: number = 1) => {
     setLoading(true);
     try {
-      const response = await questionnairesApi.getAdminT3Responses(page);
+      const response = await questionnairesApi.getAdminTFirstMonthResponses(page);
       
       const data = response.data;
       if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
@@ -80,8 +80,8 @@ const AdminT3ResultsPage: React.FC = () => {
       setCurrentPage(page);
       setError(null);
     } catch (err) {
-      console.error('Failed to fetch T3 follow-up responses', err);
-      setError('Failed to load T3 follow-up data. Please verify administrative privileges.');
+      console.error('Failed to fetch T-First-Month follow-up responses', err);
+      setError('Failed to load T-First-Month data. Please verify administrative privileges.');
       setSubmissions([]);
     } finally {
       setLoading(false);
@@ -110,7 +110,7 @@ const AdminT3ResultsPage: React.FC = () => {
             const link = document.createElement('a');
             link.href = file_url;
             const dateStr = new Date().toISOString().split('T')[0];
-            link.setAttribute('download', `t3_results_${dateStr}.csv`);
+            link.setAttribute('download', `t_first_month_results_${dateStr}.csv`);
             document.body.appendChild(link);
             link.click();
             link.remove();
@@ -132,7 +132,7 @@ const AdminT3ResultsPage: React.FC = () => {
 
   const handleViewDetail = async (id: string) => {
     try {
-      const response = await questionnairesApi.getAdminT3Detail(id);
+      const response = await questionnairesApi.getAdminTFirstMonthDetail(id);
       setSelectedSubmission(response.data);
     } catch (err) {
       console.error('Failed to fetch submission detail', err);
@@ -142,11 +142,11 @@ const AdminT3ResultsPage: React.FC = () => {
   const handleExport = async () => {
     try {
       setExportStatus('PENDING');
-      const response = await questionnairesApi.triggerAdminT3Export(selectedGroup);
+      const response = await questionnairesApi.triggerAdminTFirstMonthExport(selectedGroup);
       setExportingId(response.data.task_id);
       setError(null);
     } catch (err) {
-      console.error('Failed to export T3 follow-up data', err);
+      console.error('Failed to export T-First-Month data', err);
       setError('Failed to initiate CSV export. Please check server logs.');
       setExportStatus(null);
     }
@@ -166,7 +166,7 @@ const AdminT3ResultsPage: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <RotateCw className="w-8 h-8 text-zinc-400 animate-spin" />
-        <p className="text-zinc-500 font-medium text-sm">Loading 6-month assessment data...</p>
+        <p className="text-zinc-500 font-medium text-sm">Loading 1-month assessment data...</p>
       </div>
     );
   }
@@ -176,10 +176,10 @@ const AdminT3ResultsPage: React.FC = () => {
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-zinc-200 pb-6">
         <div className="space-y-1 flex-1">
           <div className="flex items-center gap-2 text-zinc-500 text-xs font-medium mb-1">
-            <ClipboardCheck size={14} /> 6-Month Assessment
+            <ClipboardCheck size={14} /> 1-Month Assessment
           </div>
-          <h1 className="text-3xl font-bold text-zinc-900">6-Month Assessment Results</h1>
-          <p className="text-zinc-500 text-sm">Psychometric results from completed 6-month assessments</p>
+          <h1 className="text-3xl font-bold text-zinc-900">1-Month Assessment Results</h1>
+          <p className="text-zinc-500 text-sm">Psychometric results from completed 1-month assessments</p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
@@ -313,7 +313,7 @@ const AdminT3ResultsPage: React.FC = () => {
                 {filteredSubmissions.length === 0 && (
                   <tr>
                     <td colSpan={5} className="px-6 py-16 text-center text-zinc-400 italic text-sm">
-                      No 6-month assessment submissions yet. Results will appear here when participants complete their Month 6 follow-up questionnaires.
+                      No 1-month assessment submissions yet. Results will appear here when participants complete their Day 30 follow-up questionnaires.
                     </td>
                   </tr>
                 )}
@@ -370,7 +370,7 @@ const AdminT3ResultsPage: React.FC = () => {
             >
               <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-bold text-zinc-900">6-Month Assessment Response Detail</h3>
+                  <h3 className="text-xl font-bold text-zinc-900">1-Month Assessment Response Detail</h3>
                   <p className="text-sm text-zinc-500 mt-0.5">{selectedSubmission.full_name}</p>
                 </div>
                 <button
@@ -439,4 +439,4 @@ const AdminT3ResultsPage: React.FC = () => {
   );
 };
 
-export default AdminT3ResultsPage;
+export default AdminTFirstMonthResultsPage;
