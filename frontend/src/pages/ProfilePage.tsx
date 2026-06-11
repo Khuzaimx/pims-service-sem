@@ -56,6 +56,8 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  const isAdmin = user?.role_name === 'Admin';
+
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-zinc-800"></div>
@@ -120,6 +122,7 @@ const ProfilePage: React.FC = () => {
         </div>
       </div>
 
+      {!isAdmin && (
       <div className="bg-white border border-red-200 rounded-xl shadow-sm p-6 space-y-4">
         <div>
           <h2 className="text-lg font-bold text-red-700">{t('profile.delete_account_section_title')}</h2>
@@ -137,7 +140,9 @@ const ProfilePage: React.FC = () => {
           {t('profile.delete_account_open_button')}
         </button>
       </div>
+      )}
 
+      {!isAdmin && (
       <DeleteAccountModal
         isOpen={showDeleteModal}
         username={user?.username || ''}
@@ -151,6 +156,7 @@ const ProfilePage: React.FC = () => {
         }}
         onConfirm={handleDeleteAccount}
       />
+      )}
     </div>
   );
 };
