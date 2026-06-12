@@ -170,7 +170,7 @@ const ActivityPage: React.FC = () => {
     };
   };
 
-  const getEntryLabels = (groupName: string, dayNumber: number, lang: string) => {
+  const getEntryLabels = (groupName: string, dayNumber: number): { en: string; ur: string }[] => {
     const isGroup1 = groupName === 'Group 1';
     const isGroup2 = groupName === 'Group 2';
     const isGroup3 = groupName === 'Group 3';
@@ -186,11 +186,18 @@ const ActivityPage: React.FC = () => {
       const cats = GROUP_3_SCHEDULE[day] || ['Pleasure', 'Engagement', 'Meaning'];
       return cats.map((cat, idx) => {
         const detail = CATEGORY_DETAILS[cat];
-        if (!detail) return lang === 'ur' ? `اندراج ${toUrduNumerals(idx + 1)}` : `Entry ${idx + 1}`;
-        if (lang === 'ur') {
-          return `اندراج ${toUrduNumerals(idx + 1)}: ${detail.label.ur}`;
+        const urduIdx = toUrduNumerals(idx + 1);
+        const enIdx = idx + 1;
+        if (!detail) {
+          return {
+            en: `Entry ${enIdx}`,
+            ur: `اندراج ${urduIdx}`
+          };
         }
-        return `Entry ${idx + 1}: ${detail.label.en}`;
+        return {
+          en: `Entry ${enIdx}: ${detail.label.en}`,
+          ur: `اندراج ${urduIdx}: ${detail.label.ur}`
+        };
       });
     }
 
@@ -199,47 +206,58 @@ const ActivityPage: React.FC = () => {
       const cats = GROUP_3_SCHEDULE[day] || ['Pleasure', 'Engagement', 'Meaning'];
       return cats.map((cat, idx) => {
         const detail = INTEGRATED_CATEGORY_DETAILS[cat];
-        if (!detail) return lang === 'ur' ? `اندراج ${toUrduNumerals(idx + 1)}` : `Entry ${idx + 1}`;
-        if (lang === 'ur') {
-          return `اندراج ${toUrduNumerals(idx + 1)}: ${detail.label.ur}`;
+        const urduIdx = toUrduNumerals(idx + 1);
+        const enIdx = idx + 1;
+        if (!detail) {
+          return {
+            en: `Entry ${enIdx}`,
+            ur: `اندراج ${urduIdx}`
+          };
         }
-        return `Entry ${idx + 1}: ${detail.label.en}`;
+        return {
+          en: `Entry ${enIdx}: ${detail.label.en}`,
+          ur: `اندراج ${urduIdx}: ${detail.label.ur}`
+        };
       });
-    }
-
-    if (lang === 'ur') {
-      if (isGroup1) {
-        return [
-          "اندراج ۱: یاد ۱۔ جو یاد ہے اس کی تفصیل بیان کریں۔",
-          "اندراج ۲: یاد ۲۔ جو یاد ہے اس کی تفصیل بیان کریں۔",
-          "اندراج ۳: یاد ۳۔ جو یاد ہے اس کی تفصیل بیان کریں۔"
-        ];
-      }
-      if (isGroup2) {
-        return [
-          "اندراج ۱: اچھی بات ۱۔ کیا ہوا، کون شامل تھا، اور یہ کیوں ہوا۔",
-          "اندراج ۲: اچھی بات ۲۔ کیا ہوا، کون شامل تھا، اور یہ کیوں ہوا۔",
-          "اندراج ۳: اچھی بات ۳۔ کیا ہوا، کون شامل تھا، اور یہ کیوں ہوا۔"
-        ];
-      }
-      return ["اندراج ۱", "اندراج ۲", "اندراج ۳"];
     }
 
     if (isGroup1) {
       return [
-        "Entry 1: Memory 1. Describe what you remember.",
-        "Entry 2: Memory 2. Describe what you remember.",
-        "Entry 3: Memory 3. Describe what you remember."
+        {
+          en: "Entry 1: Memory 1. Describe what you remember.",
+          ur: "اندراج ۱: یاد ۱۔ جو یاد ہے اس کی تفصیل بیان کریں۔"
+        },
+        {
+          en: "Entry 2: Memory 2. Describe what you remember.",
+          ur: "اندراج ۲: یاد ۲۔ جو یاد ہے اس کی تفصیل بیان کریں۔"
+        },
+        {
+          en: "Entry 3: Memory 3. Describe what you remember.",
+          ur: "اندراج ۳: یاد ۳۔ جو یاد ہے اس کی تفصیل بیان کریں۔"
+        }
       ];
     }
     if (isGroup2) {
       return [
-        "Entry 1: Good Thing 1. What happened, who was involved, and why it happened.",
-        "Entry 2: Good Thing 2. What happened, who was involved, and why it happened.",
-        "Entry 3: Good Thing 3. What happened, who was involved, and why it happened."
+        {
+          en: "Entry 1: Good Thing 1. What happened, who was involved, and why it happened.",
+          ur: "اندراج ۱: اچھی بات ۱۔ کیا ہوا، کون شامل تھا، اور یہ کیوں ہوا۔"
+        },
+        {
+          en: "Entry 2: Good Thing 2. What happened, who was involved, and why it happened.",
+          ur: "اندراج ۲: اچھی بات ۲۔ کیا ہوا، کون شامل تھا، اور یہ کیوں ہوا۔"
+        },
+        {
+          en: "Entry 3: Good Thing 3. What happened, who was involved, and why it happened.",
+          ur: "اندراج ۳: اچھی بات ۳۔ کیا ہوا، کون شامل تھا، اور یہ کیوں ہوا۔"
+        }
       ];
     }
-    return ["Entry 1", "Entry 2", "Entry 3"];
+    return [
+      { en: "Entry 1", ur: "اندراج ۱" },
+      { en: "Entry 2", ur: "اندراج ۲" },
+      { en: "Entry 3", ur: "اندراج ۳" }
+    ];
   };
 
   const countWords = (text: string): number => {
@@ -354,7 +372,7 @@ const ActivityPage: React.FC = () => {
   const isLocked = activity?.submitted_today;
   const bilingualDesc = getBilingualText(activity?.description);
   const currentDesc = i18n.language === 'ur' ? bilingualDesc.ur : bilingualDesc.en;
-  const labels = getEntryLabels(activity?.group_name, activity?.day_number, i18n.language);
+  const labels = getEntryLabels(activity?.group_name, activity?.day_number);
 
   const w1 = countWords(entry1);
   const w2 = countWords(entry2);
@@ -363,7 +381,7 @@ const ActivityPage: React.FC = () => {
   const isValidCount = (w: number) => w >= 20 && w <= 200;
   const canSubmit = !isLocked && isValidCount(w1) && isValidCount(w2) && isValidCount(w3);
 
-  const renderTextarea = (index: number, value: string, count: number, label: string) => {
+  const renderTextarea = (index: number, value: string, count: number, label: { en: string; ur: string }) => {
     const isWarning = count >= 180 && count <= 200;
     const isError = count > 200;
     const isBelowMin = count > 0 && count < 20;
@@ -388,9 +406,14 @@ const ActivityPage: React.FC = () => {
 
     return (
       <div className="space-y-2" key={index}>
-        <label className="text-sm font-medium text-zinc-700 block">
-          {label}
-        </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start mb-1">
+          <span className="text-sm font-semibold text-zinc-700 font-latin text-left">
+            {label.en}
+          </span>
+          <span className="text-base font-semibold text-zinc-800 font-urdu text-right" dir="rtl">
+            {label.ur}
+          </span>
+        </div>
 
         {categoryDetail && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-zinc-50/50 rounded-xl p-4 border border-zinc-300 text-xs text-zinc-600 mt-1 mb-2">
@@ -410,7 +433,7 @@ const ActivityPage: React.FC = () => {
         <div className="relative w-full">
           <textarea
             className={`w-full h-40 bg-white border border-zinc-300 rounded-xl p-4 pb-12 focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none transition-all resize-none text-zinc-800 shadow-sm ${isLocked ? 'bg-zinc-50 text-zinc-500 cursor-not-allowed' : ''}`}
-            placeholder={i18n.language === 'ur' ? "یہاں لکھنا شروع کریں..." : "Reflect and write here..."}
+            placeholder="Reflect and write here... / یہاں لکھنا شروع کریں..."
             value={value}
             onChange={(e) => handleEntryChange(index, e.target.value)}
             required
