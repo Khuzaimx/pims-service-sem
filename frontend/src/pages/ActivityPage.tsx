@@ -78,6 +78,65 @@ const CATEGORY_DETAILS: Record<string, CategoryDetail> = {
   }
 };
 
+const INTEGRATED_CATEGORY_DETAILS: Record<string, CategoryDetail> = {
+  Pleasure: {
+    label: { en: 'Pleasure with Gratitude', ur: 'لطف بمعہ شکر گزاری' },
+    definition: {
+      en: 'An enjoyable moment today that you feel grateful for. Describe what happened, why you are grateful for it, and what or who made it possible.',
+      ur: 'آج کا کوئی لطف بھرا لمحہ جس کے لیے آپ شکر گزار ہیں۔ بیان کریں کہ کیا ہوا، آپ اس کے لیے کیوں شکر گزار ہیں، اور کس یا کس چیز نے اسے ممکن بنایا۔'
+    },
+    example: {
+      en: 'Example: My sister made karak chai exactly the way I like it without my asking. I felt grateful because she remembered, and I felt cared for. It happened because she had been paying attention to small details about me lately.',
+      ur: "مثال: بہن نے بِنا کہے بالکل ویسی کڑک چائے بنائی جیسی پسند ہے۔ شکر گزاری کا احساس اس لیے ہوا کہ اسے یاد تھا، اور خیال رکھے جانے کا احساس بھی پیدا ہوا۔ یہ اس لیے ہوا کہ وہ پچھلے کچھ عرصے سے چھوٹی چھوٹی باتوں پر دھیان دے رہی تھی۔"
+    }
+  },
+  Engagement: {
+    label: { en: 'Engagement with Gratitude', ur: 'مشغولیت بمعہ شکر گزاری' },
+    definition: {
+      en: 'A moment of deep focus today that you feel grateful for. Describe what you were doing, why you are grateful for it, and what or who made it possible.',
+      ur: 'آج کا کوئی گہری مشغولیت کا لمحہ جس کے لیے آپ شکر گزار ہیں۔ بیان کریں کہ آپ کیا کر رہے تھے، اس کے لیے کیوں شکر گزار ہیں، اور کس یا کس چیز نے اسے ممکن بنایا۔'
+    },
+    example: {
+      en: 'Example: I spent forty-five minutes lost in editing my proposal section. I am grateful because focused time has been rare lately. It happened because the house was unusually quiet and my phone was on silent.',
+      ur: "مثال: تجویز کے سیکشن کی نوک پلک سنوارنے میں پینتالیس منٹ گزر گئے۔ شکر گزاری کا احساس اس لیے ہوا کہ آج کل توجہ مرکوز کرنے کا وقت کم ہی ملتا ہے۔ یہ اس لیے ممکن ہوا کہ گھر میں غیر معمولی خاموشی تھی اور فون خاموش حالت پر تھا۔"
+    }
+  },
+  Relationships: {
+    label: { en: 'Positive Relationships with Gratitude', ur: 'مثبت تعلقات بمعہ شکر گزاری' },
+    definition: {
+      en: 'A meaningful interaction today that you feel grateful for. Describe what happened, why you are grateful, and what or who made it possible.',
+      ur: 'آج کا کوئی بامقصد رابطہ جس کے لیے آپ شکر گزار ہیں۔ بیان کریں کہ کیا ہوا، آپ کیوں شکر گزار ہیں، اور کس یا کس چیز نے اسے ممکن بنایا۔'
+    },
+    example: {
+      en: 'Example: A friend called to check on me out of nowhere. I am grateful because I had been having a low week and did not expect anyone to notice. It happened because she follows my updates and acts on what she sees.',
+      ur: "مثال: ایک دوست نے اچانک حال احوال پوچھنے کے لیے فون کیا۔ شکر گزاری کا احساس اس لیے ہوا کہ پچھلا ہفتہ مشکل تھا اور توقع نہ تھی کہ کوئی متوجہ ہو گا۔ یہ اس لیے ہوا کہ وہ اپنے حلقے کی خبر رکھتی ہے اور جو دیکھتی ہے اس پر عمل کرتی ہے۔"
+    }
+  },
+  Meaning: {
+    label: { en: 'Meaning with Gratitude', ur: 'مقصد بمعہ شکر گزاری' },
+    definition: {
+      en: 'Something purposeful you did today that you feel grateful for. Describe what you did, why you are grateful for it, and what or who made it possible.',
+      ur: 'آج کوئی بامقصد کام جو آپ نے کیا اور جس کے لیے آپ شکر گزار ہیں۔ بیان کریں کہ آپ نے کیا کیا، اس کے لیے کیوں شکر گزار ہیں، اور کس یا کس چیز نے اسے ممکن بنایا۔'
+    },
+    example: {
+      en: 'Example: I tutored my younger cousin for an hour. I am grateful because helping her felt purposeful at the end of a draining week. It happened because she asked, and because I had the energy to say yes.',
+      ur: "مثال: چھوٹی کزن کو ایک گھنٹہ پڑھایا۔ شکر گزاری کا احساس اس لیے ہوا کہ تھکا دینے والے ہفتے کے اختتام پر اس کی مدد کرنا بامقصد لگا۔ یہ اس لیے ہوا کہ اس نے پوچھا، اور اس وقت 'ہاں' کہنے کی توانائی موجود تھی۔"
+    }
+  },
+  Accomplishment: {
+    label: { en: 'Accomplishment with Gratitude', ur: 'کامیابی بمعہ شکر گزاری' },
+    definition: {
+      en: 'Something you did well today that you feel grateful for. Describe what you accomplished, why you are grateful for it, and what or who made it possible.',
+      ur: 'آج کوئی ایسا کام جو آپ نے اچھا کیا اور جس کے لیے آپ شکر گزار ہیں۔ بیان کریں کہ آپ نے کیا حاصل کیا، اس کے لیے کیوں شکر گزار ہیں، اور کس یا کس چیز نے اسے ممکن بنایا۔'
+    },
+    example: {
+      en: 'Example: Submitted the section to my supervisor before deadline. I am grateful because I had been worried I would miss it. It happened because I planned the week tightly and a colleague reviewed it for me yesterday.',
+      ur: "مثال: وقتِ مقررہ سے پہلے سپروائزر کو سیکشن جمع کروا دیا۔ شکر گزاری کا احساس اس لیے ہوا کہ پہلے یہ اندیشہ تھا کہ ڈیڈ لائن چھوٹ جائے گی۔ یہ اس لیے ممکن ہوا کہ پورے ہفتے کی منصوبہ بندی سخت رکھی گئی اور ایک ساتھی نے کل اسے دیکھ کر مشورہ دیا۔"
+    }
+  }
+};
+
+
 const ActivityPage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -115,15 +174,34 @@ const ActivityPage: React.FC = () => {
     const isGroup1 = groupName === 'Group 1';
     const isGroup2 = groupName === 'Group 2';
     const isGroup3 = groupName === 'Group 3';
+    const isGroup4 = groupName === 'Group 4';
+
+    const toUrduNumerals = (num: number): string => {
+      const urduDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+      return num.toString().split('').map(d => urduDigits[parseInt(d, 10)] || d).join('');
+    };
 
     if (isGroup3) {
       const day = dayNumber || 1;
       const cats = GROUP_3_SCHEDULE[day] || ['Pleasure', 'Engagement', 'Meaning'];
       return cats.map((cat, idx) => {
         const detail = CATEGORY_DETAILS[cat];
-        if (!detail) return lang === 'ur' ? `اندراج ${idx + 1}` : `Entry ${idx + 1}`;
+        if (!detail) return lang === 'ur' ? `اندراج ${toUrduNumerals(idx + 1)}` : `Entry ${idx + 1}`;
         if (lang === 'ur') {
-          return `اندراج ${idx + 1}: ${detail.label.ur}`;
+          return `اندراج ${toUrduNumerals(idx + 1)}: ${detail.label.ur}`;
+        }
+        return `Entry ${idx + 1}: ${detail.label.en}`;
+      });
+    }
+
+    if (isGroup4) {
+      const day = dayNumber || 1;
+      const cats = GROUP_3_SCHEDULE[day] || ['Pleasure', 'Engagement', 'Meaning'];
+      return cats.map((cat, idx) => {
+        const detail = INTEGRATED_CATEGORY_DETAILS[cat];
+        if (!detail) return lang === 'ur' ? `اندراج ${toUrduNumerals(idx + 1)}` : `Entry ${idx + 1}`;
+        if (lang === 'ur') {
+          return `اندراج ${toUrduNumerals(idx + 1)}: ${detail.label.ur}`;
         }
         return `Entry ${idx + 1}: ${detail.label.en}`;
       });
@@ -132,19 +210,19 @@ const ActivityPage: React.FC = () => {
     if (lang === 'ur') {
       if (isGroup1) {
         return [
-          "اندراج 1: یاد 1۔ جو یاد ہے اس کی تفصیل بیان کریں۔",
-          "اندراج 2: یاد 2۔ جو یاد ہے اس کی تفصیل بیان کریں۔",
-          "اندراج 3: یاد 3۔ جو یاد ہے اس کی تفصیل بیان کریں۔"
+          "اندراج ۱: یاد ۱۔ جو یاد ہے اس کی تفصیل بیان کریں۔",
+          "اندراج ۲: یاد ۲۔ جو یاد ہے اس کی تفصیل بیان کریں۔",
+          "اندراج ۳: یاد ۳۔ جو یاد ہے اس کی تفصیل بیان کریں۔"
         ];
       }
       if (isGroup2) {
         return [
-          "اندراج 1: اچھی بات 1۔ کیا ہوا، کون شامل تھا، اور یہ کیوں ہوا۔",
-          "اندراج 2: اچھی بات 2۔ کیا ہوا، کون شامل تھا، اور یہ کیوں ہوا۔",
-          "اندراج 3: اچھی بات 3۔ کیا ہوا، کون شامل تھا، اور یہ کیوں ہوا۔"
+          "اندراج ۱: اچھی بات ۱۔ کیا ہوا، کون شامل تھا، اور یہ کیوں ہوا۔",
+          "اندراج ۲: اچھی بات ۲۔ کیا ہوا، کون شامل تھا، اور یہ کیوں ہوا۔",
+          "اندراج ۳: اچھی بات ۳۔ کیا ہوا، کون شامل تھا، اور یہ کیوں ہوا۔"
         ];
       }
-      return ["اندراج 1", "اندراج 2", "اندراج 3"];
+      return ["اندراج ۱", "اندراج ۲", "اندراج ۳"];
     }
 
     if (isGroup1) {
@@ -290,7 +368,7 @@ const ActivityPage: React.FC = () => {
     const isError = count > 200;
     const isBelowMin = count > 0 && count < 20;
 
-    // Retrieve category details if Group 3
+    // Retrieve category details if Group 3 or Group 4
     let categoryDetail = null;
     if (activity?.group_name === 'Group 3') {
       const dayNum = activity?.day_number || 1;
@@ -298,6 +376,13 @@ const ActivityPage: React.FC = () => {
       const cat = cats[index - 1];
       if (cat) {
         categoryDetail = CATEGORY_DETAILS[cat];
+      }
+    } else if (activity?.group_name === 'Group 4') {
+      const dayNum = activity?.day_number || 1;
+      const cats = GROUP_3_SCHEDULE[dayNum] || [];
+      const cat = cats[index - 1];
+      if (cat) {
+        categoryDetail = INTEGRATED_CATEGORY_DETAILS[cat];
       }
     }
 
