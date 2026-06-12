@@ -2,8 +2,17 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { useTranslation } from 'react-i18next';
-import { User, Mail, Phone, Calendar, ArrowRight, ArrowLeft, CheckCircle2, AlertCircle, Loader2, Key, RefreshCw } from 'lucide-react';
+import { User, Mail, Phone, Calendar, ArrowRight, ArrowLeft, CheckCircle2, AlertCircle, Loader2, Key, RefreshCw, X } from 'lucide-react';
 import PasswordInput from '../components/Auth/PasswordInput';
+
+const COUNTRY_CODES = [
+  { code: '+92', name: 'PK', label: 'Pakistan (+92)' },
+  { code: '+60', name: 'MY', label: 'Malaysia (+60)' },
+  { code: '+44', name: 'GB', label: 'United Kingdom (+44)' },
+  { code: '+1', name: 'US', label: 'United States (+1)' },
+  { code: '+966', name: 'SA', label: 'Saudi Arabia (+966)' },
+  { code: '+971', name: 'AE', label: 'United Arab Emirates (+971)' },
+];
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -11,7 +20,7 @@ const RegisterPage: React.FC = () => {
     username: '',
     full_name: '',
     email: '',
-    whatsapp_number: '',
+    whatsapp_number: '+92',
     password: '',
     confirm_password: '',
     date_of_birth: '',
@@ -19,6 +28,9 @@ const RegisterPage: React.FC = () => {
     consent_version: '1.0',
     otp: '',
   });
+
+  const [countryCode, setCountryCode] = useState('+92');
+  const [rawPhone, setRawPhone] = useState('');
 
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
@@ -38,6 +50,26 @@ const RegisterPage: React.FC = () => {
     if (errors[name]) {
       const newErrors = { ...errors };
       delete newErrors[name];
+      setErrors(newErrors);
+    }
+  };
+
+  const handlePhoneChange = (code: string, number: string) => {
+    setCountryCode(code);
+    setRawPhone(number);
+    
+    // Clean any leading zeros and keep digits only
+    const digitsOnly = number.replace(/\D/g, '');
+    const cleanNumber = digitsOnly.replace(/^0+/, '');
+    
+    setFormData(prev => ({
+      ...prev,
+      whatsapp_number: `${code}${cleanNumber}`
+    }));
+    
+    if (errors.whatsapp_number) {
+      const newErrors = { ...errors };
+      delete newErrors.whatsapp_number;
       setErrors(newErrors);
     }
   };
@@ -252,18 +284,38 @@ const RegisterPage: React.FC = () => {
 
                 <div className="space-y-3">
                   <label className="block text-sm font-medium text-zinc-700" htmlFor="whatsapp_number">{t('register.whatsapp_number')}</label>
-                  <div className="relative">
-                    <Phone className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                    <input
-                      id="whatsapp_number"
-                      name="whatsapp_number"
-                      type="text"
-                      required
-                      placeholder={t('register.whatsapp_number_placeholder')}
-                      className={`input-minimal !ps-10 ${errors.whatsapp_number ? 'border-black border-2 ring-0' : ''}`}
-                      value={formData.whatsapp_number}
-                      onChange={handleChange}
-                    />
+                  <div className="flex gap-2">
+                    <div className="relative w-32 shrink-0">
+                      <select
+                        value={countryCode}
+                        onChange={(e) => handlePhoneChange(e.target.value, rawPhone)}
+                        className="w-full h-10 px-3 bg-white border border-zinc-300 rounded-xl text-xs font-semibold text-zinc-700 focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none transition-all shadow-sm cursor-pointer appearance-none"
+                        style={{
+                          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
+                          backgroundRepeat: 'no-repeat',
+                          backgroundPosition: 'right 0.5rem center',
+                          backgroundSize: '1.25em'
+                        }}
+                      >
+                        {COUNTRY_CODES.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.name} ({c.code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="relative flex-1">
+                      <Phone className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                      <input
+                        id="raw_whatsapp_number"
+                        type="tel"
+                        required
+                        placeholder="3001234567"
+                        className={`input-minimal !ps-10 ${errors.whatsapp_number ? 'border-black border-2 ring-0' : ''}`}
+                        value={rawPhone}
+                        onChange={(e) => handlePhoneChange(countryCode, e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -422,47 +474,100 @@ const RegisterPage: React.FC = () => {
 
       {/* Consent Modal */}
       {showConsentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4 transition-opacity duration-200">
-          <div className="bg-white border-2 border-black max-w-lg w-full p-6 space-y-4 max-h-[85vh] overflow-y-auto rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative flex flex-col">
-            <div className="flex justify-between items-center border-b-2 border-black pb-2">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-black">{t('register.consent_header')}</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 backdrop-blur-sm p-4 transition-opacity duration-200 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl border border-zinc-200 max-w-4xl w-full p-8 shadow-2xl relative flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
+            
+            <div className="flex justify-between items-center border-b border-zinc-100 pb-4 mb-4">
+              <div className="space-y-1">
+                <h2 className="text-xl font-extrabold text-zinc-900 tracking-tight">
+                  {t('register.consent_header')}
+                </h2>
+                <p className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">
+                  Participant Informed Consent / باضابطہ رضامندی نامہ
+                </p>
+              </div>
               <button 
                 type="button" 
                 onClick={() => setShowConsentModal(false)} 
-                className="text-black font-bold text-xs uppercase tracking-wider border border-black px-2 py-0.5 hover:bg-zinc-100"
+                className="text-zinc-400 hover:text-zinc-600 transition-colors p-2 hover:bg-zinc-100 rounded-full cursor-pointer"
               >
-                Close
+                <X size={20} />
               </button>
             </div>
             
-            <div className="text-xs text-zinc-700 space-y-4 leading-relaxed font-sans overflow-y-auto pr-1">
-              <div>
-                <h4 className="font-bold text-black text-sm mb-1">{t('register.consent_section1_title')}</h4>
-                <p>{t('register.consent_section1_text')}</p>
-              </div>
-              <div>
-                <h4 className="font-bold text-black text-sm mb-1">{t('register.consent_section2_title')}</h4>
-                <p>{t('register.consent_section2_text')}</p>
-              </div>
-              <div>
-                <h4 className="font-bold text-black text-sm mb-1">{t('register.consent_section3_title')}</h4>
-                <p className="text-black font-semibold bg-yellow-50 p-2 border border-dashed border-yellow-300 rounded-none leading-relaxed">
-                  {t('register.consent_section3_text')}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 overflow-y-auto pr-1 flex-1 py-2">
+              {/* English Column */}
+              <div className="space-y-5 text-xs text-zinc-600 leading-relaxed text-left font-latin pr-2 md:border-r md:border-zinc-100">
+                <p className="font-semibold text-zinc-800 text-sm bg-zinc-50 p-3 rounded-xl border border-zinc-100">
+                  {t('register.consent_intro', { lng: 'en' })}
                 </p>
+                
+                <div className="space-y-1">
+                  <h4 className="font-bold text-zinc-900 text-sm">{t('register.consent_section1_title', { lng: 'en' })}</h4>
+                  <p>{t('register.consent_section1_text', { lng: 'en' })}</p>
+                </div>
+
+                <div className="space-y-1">
+                  <h4 className="font-bold text-zinc-900 text-sm">{t('register.consent_section2_title', { lng: 'en' })}</h4>
+                  <p>{t('register.consent_section2_text', { lng: 'en' })}</p>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl space-y-1">
+                  <h4 className="font-bold text-amber-900 text-sm">{t('register.consent_section3_title', { lng: 'en' })}</h4>
+                  <p className="text-amber-800 font-medium leading-relaxed">{t('register.consent_section3_text', { lng: 'en' })}</p>
+                </div>
+
+                <div className="space-y-1">
+                  <h4 className="font-bold text-zinc-900 text-sm">{t('register.consent_section4_title', { lng: 'en' })}</h4>
+                  <p>{t('register.consent_section4_text', { lng: 'en' })}</p>
+                </div>
+
+                <div className="space-y-1">
+                  <h4 className="font-bold text-zinc-900 text-sm">{t('register.consent_section5_title', { lng: 'en' })}</h4>
+                  <p>{t('register.consent_section5_text', { lng: 'en' })}</p>
+                </div>
               </div>
-              <div>
-                <h4 className="font-bold text-black text-sm mb-1">{t('register.consent_section4_title')}</h4>
-                <p>{t('register.consent_section4_text')}</p>
+
+              {/* Urdu Column */}
+              <div className="space-y-5 text-sm text-zinc-600 leading-relaxed text-right font-urdu pl-2" dir="rtl">
+                <p className="font-semibold text-zinc-800 text-base bg-zinc-50 p-3 rounded-xl border border-zinc-100">
+                  {t('register.consent_intro', { lng: 'ur' })}
+                </p>
+
+                <div className="space-y-1">
+                  <h4 className="font-bold text-zinc-900 text-base">{t('register.consent_section1_title', { lng: 'ur' })}</h4>
+                  <p className="text-sm">{t('register.consent_section1_text', { lng: 'ur' })}</p>
+                </div>
+
+                <div className="space-y-1">
+                  <h4 className="font-bold text-zinc-900 text-base">{t('register.consent_section2_title', { lng: 'ur' })}</h4>
+                  <p className="text-sm">{t('register.consent_section2_text', { lng: 'ur' })}</p>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl space-y-1">
+                  <h4 className="font-bold text-amber-900 text-base">{t('register.consent_section3_title', { lng: 'ur' })}</h4>
+                  <p className="text-amber-800 font-medium text-sm leading-relaxed">{t('register.consent_section3_text', { lng: 'ur' })}</p>
+                </div>
+
+                <div className="space-y-1">
+                  <h4 className="font-bold text-zinc-900 text-base">{t('register.consent_section4_title', { lng: 'ur' })}</h4>
+                  <p className="text-sm">{t('register.consent_section4_text', { lng: 'ur' })}</p>
+                </div>
+
+                <div className="space-y-1">
+                  <h4 className="font-bold text-zinc-900 text-base">{t('register.consent_section5_title', { lng: 'ur' })}</h4>
+                  <p className="text-sm">{t('register.consent_section5_text', { lng: 'ur' })}</p>
+                </div>
               </div>
             </div>
             
-            <div className="pt-3 border-t-2 border-black flex justify-end gap-2">
+            <div className="pt-4 border-t border-zinc-100 flex justify-end gap-3 mt-4">
               <button
                 type="button"
                 onClick={() => setShowConsentModal(false)}
-                className="border border-black px-3 py-1.5 text-xs font-bold uppercase tracking-wider hover:bg-zinc-100"
+                className="px-5 py-2.5 rounded-xl border border-zinc-300 text-zinc-700 text-xs font-semibold uppercase tracking-wider hover:bg-zinc-50 hover:text-zinc-950 transition-colors cursor-pointer"
               >
-                Read Later
+                Read Later / بعد میں پڑھیں
               </button>
               <button
                 type="button"
@@ -470,9 +575,9 @@ const RegisterPage: React.FC = () => {
                   setFormData(prev => ({ ...prev, consent_agreed: true }));
                   setShowConsentModal(false);
                 }}
-                className="bg-black text-white px-4 py-1.5 text-xs font-bold uppercase tracking-wider hover:bg-zinc-800"
+                className="bg-zinc-900 text-white px-6 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider hover:bg-zinc-800 transition-colors shadow-md hover:shadow-lg cursor-pointer"
               >
-                Agree & Close
+                Agree & Close / متفق ہوں اور بند کریں
               </button>
             </div>
           </div>
