@@ -14,14 +14,6 @@ import {
   Save
 } from 'lucide-react';
 
-const SCALE_NAMES: Record<string, string> = {
-  'PERMA': 'PERMA Profiler',
-  'PHQ-9': 'Depression Severity (PHQ-9)',
-  'GAD-7': 'Anxiety Severity (GAD-7)',
-  'PANAS': 'Positive and Negative Affect (PANAS)',
-  'Gratitude': 'Gratitude Scale',
-  'SIDAS': 'Suicidal Ideation (SIDAS)',
-};
 
 const getNumericValueForResponse = (question: any, responseValue: any): number | undefined => {
   if (responseValue === undefined || responseValue === null) return undefined;
@@ -68,6 +60,16 @@ const QuestionnairePage: React.FC = () => {
   useEffect(() => {
     const initSession = async () => {
       if (!id) return;
+      
+      // Reset questionnaire states to prevent UI flickering or carrying over responses
+      setCompleted(false);
+      setError(null);
+      setResponses({});
+      setCurrentIndex(0);
+      setQuestionnaire(null);
+      setResponseSetId(null);
+      setLoading(true);
+
       try {
         const queryParams = new URLSearchParams(window.location.search);
         const milestone = queryParams.get('milestone') || undefined;
@@ -394,7 +396,7 @@ const QuestionnairePage: React.FC = () => {
   };
 
   const submitAll = async (overrideResponses?: Record<string, any>) => {
-    if (!responseSetId) return;
+    if (!responseSetId || submitting) return;
     setSubmitting(true);
     const finalState = overrideResponses || responses;
     
@@ -416,7 +418,12 @@ const QuestionnairePage: React.FC = () => {
         return base;
       });
 
-      const res = await questionnairesApi.submitResponseSet(responseSetId, payload);
+      // Introduce a minimum delay of 1.5 seconds to let the server transaction settle and show a premium loading experience
+      const isTest = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+      const [res] = await Promise.all([
+        questionnairesApi.submitResponseSet(responseSetId, payload),
+        new Promise(resolve => setTimeout(resolve, isTest ? 0 : 1500))
+      ]);
       
       const isSuicideTriggered = res.data?.suicide_risk_triggered;
       if (isSuicideTriggered && !hasShownSafetyPanel) {
@@ -499,6 +506,7 @@ const QuestionnairePage: React.FC = () => {
           questions={questions}
           responseSetId={responseSetId!}
           initialResponses={responses}
+          submitting={submitting}
           onComplete={(finalResponses) => {
             setResponses(finalResponses);
             submitAll(finalResponses);
@@ -518,9 +526,6 @@ const QuestionnairePage: React.FC = () => {
     }
     return { english: cleanContent, urdu: '' };
   };
-
-  const currentScaleName = currentScaleGroup.name;
-  const currentScaleTitle = SCALE_NAMES[currentScaleName] || `${currentScaleName} Scale`;
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">
@@ -548,7 +553,6 @@ const QuestionnairePage: React.FC = () => {
       <div className="mb-16 space-y-6">
         <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-[0.3em]">
           <span className="text-zinc-400 text-xs font-medium">Scale {currentIndex + 1} / {scaleGroups.length}</span>
-          <span className="text-zinc-700 text-xs font-semibold">{currentScaleTitle}</span>
         </div>
         <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden">
           <motion.div
