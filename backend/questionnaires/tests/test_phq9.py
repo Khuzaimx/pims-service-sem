@@ -1,5 +1,6 @@
 import pytest
 import logging
+from django.core import mail
 from django.core.management import call_command
 from django.core.cache import cache
 from django.contrib.auth import get_user_model
@@ -370,7 +371,7 @@ def test_battery_scoring_and_sidas_risk_triggers(seeded_db, participant_user, ad
     assert "high suicide risk" in Notification.objects.filter(user=admin_user).first().message.lower()
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 def test_suicide_risk_protocol_opt_in_flow(seeded_db, participant_user, admin_user):
     from rest_framework.test import APIClient
     client = APIClient()
@@ -413,9 +414,13 @@ def test_suicide_risk_protocol_opt_in_flow(seeded_db, participant_user, admin_us
     assert response_set.suicide_risk_triggered is True
     assert response_set.suicide_risk_opt_in is None
     
-    # Verify participant notifications are created for email and whatsapp
+    # Verify participant support email and whatsapp notification
+    participant_emails = [m for m in mail.outbox if participant_user.email in m.to]
+    assert len(participant_emails) == 1
+    assert 'Support resources are available' in participant_emails[0].subject
+
     participant_notifications = Notification.objects.filter(user=participant_user)
-    assert participant_notifications.filter(n_type='email').exists()
+    assert not participant_notifications.filter(n_type='email').exists()
     assert participant_notifications.filter(n_type='whatsapp').exists()
     
     # Post to opt-in endpoint
