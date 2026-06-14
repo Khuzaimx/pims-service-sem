@@ -333,7 +333,9 @@ class ResponseSetSubmitSerializer(serializers.ModelSerializer):
                     user.save(update_fields=['has_completed_sociodemographic'])
 
             # 4.5. Set onboarding_completed_at when SIGNUP milestone of PSYCHOMETRIC questionnaire is completed
+            is_new_onboarding = False
             if instance.milestone == 'SIGNUP' and instance.questionnaire.assessment_type == 'PSYCHOMETRIC':
+                is_new_onboarding = user.onboarding_completed_at is None
                 user.onboarding_completed_at = timezone.now()
                 user.save(update_fields=['onboarding_completed_at'])
 
@@ -355,6 +357,16 @@ class ResponseSetSubmitSerializer(serializers.ModelSerializer):
 
             # Check and trigger risk-protocol alert
             check_and_trigger_risk_protocol(instance)
+
+            if (
+                is_new_onboarding
+                and not user.is_disqualified
+                and not instance.suicide_risk_triggered
+            ):
+                from emails.tasks import send_welcome_email_task
+                transaction.on_commit(
+                    lambda user_id=user.user_id: send_welcome_email_task.delay(user_id)
+                )
 
             # Trigger Month-3 PERMA report task if 3_MONTHS milestone of PSYCHOMETRIC questionnaire is completed
             if instance.milestone == '3_MONTHS' and instance.questionnaire.assessment_type == 'PSYCHOMETRIC':

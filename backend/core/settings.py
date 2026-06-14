@@ -85,6 +85,7 @@ INSTALLED_APPS = [
     'questionnaires',
     'admin_tools',
     'support',
+    'emails',
 ]
 
 MIDDLEWARE = [
@@ -316,6 +317,14 @@ EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='no-reply@psycheversity.com')
+SITE_BASE_URL = env('SITE_BASE_URL', default='https://psycheversity.com')
+PARTICIPANT_EMAIL_FROM = env(
+    'PARTICIPANT_EMAIL_FROM',
+    default='Psycheversity Research Team <support@psycheversity.com>',
+)
+PARTICIPANT_EMAIL_REPLY_TO = env('PARTICIPANT_EMAIL_REPLY_TO', default='support@psycheversity.com')
+PARTICIPANT_WITHDRAW_URL = env('PARTICIPANT_WITHDRAW_URL', default='')
+PARTICIPANT_SUPPORT_URL = env('PARTICIPANT_SUPPORT_URL', default='')
 
 # Ensure logs directory exists
 os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)

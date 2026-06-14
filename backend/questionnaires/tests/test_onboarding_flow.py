@@ -3,6 +3,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 from django.contrib.auth import get_user_model
+from django.core import mail
 from questionnaires.models import Questionnaire, Question, Option, ResponseSet
 from groups.models import Group
 
@@ -50,7 +51,7 @@ def test_user_onboarding_default_state(fresh_user):
     assert fresh_user.has_completed_sociodemographic is False
     assert fresh_user.group is None
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 def test_sociodemographic_submission_completes_onboarding(fresh_client, fresh_user, test_group):
     """
     Submitting the sociodemographic questionnaire completed sociodemographic status,
@@ -105,6 +106,11 @@ def test_sociodemographic_submission_completes_onboarding(fresh_client, fresh_us
 
     fresh_user.refresh_from_db()
     assert fresh_user.onboarding_completed_at is not None  # Now onboarding is fully complete
+    assert len(mail.outbox) == 1
+    welcome = mail.outbox[0]
+    assert 'Welcome to Psycheversity' in welcome.subject
+    assert 'سائیکیورسٹی میں خوش آمدید' in welcome.subject
+    assert welcome.to == [fresh_user.email]
 
 @pytest.mark.django_db
 def test_sociodemographic_disqualification(fresh_client, fresh_user, test_group):
@@ -147,6 +153,7 @@ def test_sociodemographic_disqualification(fresh_client, fresh_user, test_group)
     assert fresh_user.disqualification_reason != ""
     assert fresh_user.has_completed_sociodemographic is False
     assert fresh_user.group is None
+    assert len(mail.outbox) == 0
 
 @pytest.mark.django_db
 def test_sociodemographic_disqualification_by_order(fresh_client, fresh_user, test_group):
