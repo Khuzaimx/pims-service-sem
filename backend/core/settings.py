@@ -85,6 +85,7 @@ INSTALLED_APPS = [
     'questionnaires',
     'admin_tools',
     'support',
+    'emails',
 ]
 
 MIDDLEWARE = [
@@ -273,10 +274,13 @@ if 'test' in sys.argv or 'pytest' in sys.modules:
 # Celery Beat Schedule
 from celery.schedules import crontab
 CELERY_BEAT_SCHEDULE = {
-    'daily-morning-reminder': {
-        'task': 'notifications.tasks.check_and_send_daily_reminders',
+    'booster-daily-nudge': {
+        'task': 'emails.booster_tasks.send_booster_daily_nudges',
         'schedule': crontab(hour=9, minute=0),
-        'args': ('morning',),
+    },
+    'booster-phase-invite': {
+        'task': 'emails.booster_tasks.send_booster_phase_invites',
+        'schedule': crontab(hour=9, minute=15),
     },
     'daily-evening-reminder': {
         'task': 'notifications.tasks.check_and_send_daily_reminders',
@@ -316,6 +320,14 @@ EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='no-reply@psycheversity.com')
+SITE_BASE_URL = env('SITE_BASE_URL', default='https://psycheversity.com')
+PARTICIPANT_EMAIL_FROM = env(
+    'PARTICIPANT_EMAIL_FROM',
+    default='Psycheversity Research Team <support@psycheversity.com>',
+)
+PARTICIPANT_EMAIL_REPLY_TO = env('PARTICIPANT_EMAIL_REPLY_TO', default='support@psycheversity.com')
+PARTICIPANT_WITHDRAW_URL = env('PARTICIPANT_WITHDRAW_URL', default='')
+PARTICIPANT_SUPPORT_URL = env('PARTICIPANT_SUPPORT_URL', default='')
 
 # Ensure logs directory exists
 os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)

@@ -6,7 +6,7 @@ from .scoring import calculate_and_save_scores
 logger = logging.getLogger(__name__)
 
 
-def check_and_trigger_risk_protocol(response_set):
+def check_and_trigger_risk_protocol(response_set, *, notify_participant=True):
     """
     Checks if the response set contains a high risk answer:
     - PHQ-9 Item 9 >= 1
@@ -77,37 +77,34 @@ def check_and_trigger_risk_protocol(response_set):
             )
             
             from notifications.tasks import send_notification
-            
-            # 1. Create and send participant safety panel resources (Email + WhatsApp)
-            participant_message = (
-                "Your responses suggest you may be experiencing distress. To protect your well-being, "
-                "please reach out to one of the support services below. You are not alone.\n\n"
-                "Umang 0311-7786264 (24/7, free, multilingual)\n"
-                "Taskeen 0316-8275336 (Mon–Sat 11am–11pm) + 24/7 chatbot at taskeen.org\n"
-                "Rozan 0304-1118666 / 0800-22444 (Mon–Sat)\n"
-                "Emergency Rescue 1122, Edhi 115, Chhipa 1020"
-            )
-            
-            p_email = Notification.objects.create(
-                user=user,
-                n_type='email',
-                message=participant_message,
-                scheduled_time=timezone.now(),
-                status='pending'
-            )
             from django.db import transaction
-            transaction.on_commit(lambda: send_notification.delay(p_email.id))
-            
-            p_whatsapp = Notification.objects.create(
-                user=user,
-                n_type='whatsapp',
-                message=participant_message,
-                scheduled_time=timezone.now(),
-                status='pending'
-            )
-            transaction.on_commit(lambda: send_notification.delay(p_whatsapp.id))
-            
-            # 2. Notify admins
+
+            # Participant email: bilingual support resources at every stage (including SIGNUP).
+            if notify_participant:
+                from emails.tasks import send_support_email_task
+                transaction.on_commit(
+                    lambda user_id=user.user_id: send_support_email_task.delay(user_id)
+                )
+
+                participant_message = (
+                    "Your responses suggest you may be experiencing distress. To protect your well-being, "
+                    "please reach out to one of the support services below. You are not alone.\n\n"
+                    "Umang 0311-7786264 (24/7, free, multilingual)\n"
+                    "Taskeen 0316-8275336 (Mon–Sat 11am–11pm) + 24/7 chatbot at taskeen.org\n"
+                    "Rozan 0304-1118666 / 0800-22444 (Mon–Sat)\n"
+                    "Emergency Rescue 1122, Edhi 115, Chhipa 1020"
+                )
+
+                p_whatsapp = Notification.objects.create(
+                    user=user,
+                    n_type='whatsapp',
+                    message=participant_message,
+                    scheduled_time=timezone.now(),
+                    status='pending'
+                )
+                transaction.on_commit(lambda: send_notification.delay(p_whatsapp.id))
+
+            # Notify admins
             User = get_user_model()
             admins = User.objects.filter(is_staff=True)
             for admin in admins:
@@ -203,6 +200,27 @@ class AdminResponseSetSerializer(serializers.ModelSerializer):
             return obj.user.group.name
         return None
 
+class AdminResponseSetListSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source='user.display_name', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+    whatsapp_number = serializers.CharField(source='user.whatsapp_number', read_only=True)
+    questionnaire_title = serializers.CharField(source='questionnaire.title', read_only=True)
+    group_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ResponseSet
+        fields = [
+            'id', 'user', 'full_name', 'username', 'whatsapp_number',
+            'questionnaire', 'questionnaire_title', 
+            'group_name',
+            'status', 'started_at', 'completed_at'
+        ]
+
+    def get_group_name(self, obj):
+        if hasattr(obj.user, 'group') and obj.user.group:
+            return obj.user.group.name
+        return None
+
 class ResponseBulkSerializer(serializers.Serializer):
     """
     Serializer for individual responses within a bulk submission.
@@ -289,6 +307,7 @@ class ResponseSetSubmitSerializer(serializers.ModelSerializer):
             instance.save()
 
             user = instance.user
+            socio_disqualified = False
             if instance.questionnaire.assessment_type == 'SOCIODEMOGRAPHIC':
                 is_disqualified = False
                 for item in responses_data:
@@ -306,13 +325,16 @@ class ResponseSetSubmitSerializer(serializers.ModelSerializer):
                     user.is_disqualified = True
                     user.disqualification_reason = "Answered YES to eligibility screener."
                     user.save(update_fields=['is_disqualified', 'disqualification_reason'])
+                    socio_disqualified = True
                 else:
                     assign_user_to_group(user)
                     user.has_completed_sociodemographic = True
                     user.save(update_fields=['has_completed_sociodemographic'])
 
             # 4.5. Set onboarding_completed_at when SIGNUP milestone of PSYCHOMETRIC questionnaire is completed
+            is_new_onboarding = False
             if instance.milestone == 'SIGNUP' and instance.questionnaire.assessment_type == 'PSYCHOMETRIC':
+                is_new_onboarding = user.onboarding_completed_at is None
                 user.onboarding_completed_at = timezone.now()
                 user.save(update_fields=['onboarding_completed_at'])
 
@@ -334,6 +356,31 @@ class ResponseSetSubmitSerializer(serializers.ModelSerializer):
 
             # Check and trigger risk-protocol alert
             check_and_trigger_risk_protocol(instance)
+
+            if socio_disqualified:
+                from emails.tasks import send_socio_disqualification_email_task
+                transaction.on_commit(
+                    lambda user_id=user.user_id: send_socio_disqualification_email_task.delay(user_id)
+                )
+            elif is_new_onboarding and not user.is_disqualified:
+                from emails.tasks import send_welcome_email_task
+                transaction.on_commit(
+                    lambda user_id=user.user_id: send_welcome_email_task.delay(user_id)
+                )
+
+            if (
+                instance.questionnaire.assessment_type == 'PSYCHOMETRIC'
+                and instance.milestone in ('7_DAYS', '1_MONTH', '6_MONTHS', '1_YEAR')
+            ):
+                from emails.booster_schedule import MILESTONE_PHASE_COMPLETE
+                from emails.booster_tasks import send_phase_complete_email_task
+
+                template_key = MILESTONE_PHASE_COMPLETE[instance.milestone]
+                transaction.on_commit(
+                    lambda user_id=user.user_id, key=template_key: send_phase_complete_email_task.delay(
+                        user_id, key
+                    )
+                )
 
             # Trigger Month-3 PERMA report task if 3_MONTHS milestone of PSYCHOMETRIC questionnaire is completed
             if instance.milestone == '3_MONTHS' and instance.questionnaire.assessment_type == 'PSYCHOMETRIC':
@@ -417,7 +464,7 @@ class ResponseSetDraftSerializer(serializers.ModelSerializer):
             # Calculate and save scores on draft saving
             calculate_and_save_scores(instance)
 
-            # Check and trigger risk-protocol alert on draft saving
-            check_and_trigger_risk_protocol(instance)
+            # Check and trigger risk-protocol alert on draft saving (no participant email yet)
+            check_and_trigger_risk_protocol(instance, notify_participant=False)
 
         return instance
