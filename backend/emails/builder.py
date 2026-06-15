@@ -536,3 +536,157 @@ def build_phase_complete_email(
         **PHASE_REPORT_COMPLETE_EMAIL,
     }
     return _build_simple_bilingual_email(first_name, templates[template_key], links=links)
+
+
+def build_otp_email(otp: str, links: dict[str, str] | None = None) -> dict[str, str]:
+    from .content import OTP_EMAIL
+
+    otp_html = (
+        f'<div style="margin: 24px 0; text-align: center;">'
+        f'<span style="background-color: #f8fafc; color: {NAVY}; font-size: 32px; '
+        f'font-weight: bold; letter-spacing: 4px; padding: 12px 30px; '
+        f'border: 2px solid #e2e8f0; border-radius: 8px; display: inline-block;'
+        f'font-family: Arial, sans-serif;">{otp}</span>'
+        f'</div>'
+    )
+    otp_text = f'\nVerification Code: {otp}\n'
+
+    return _build_simple_bilingual_email(
+        first_name="",
+        email_content=OTP_EMAIL,
+        links=links,
+        extra_english_html=otp_html,
+        extra_urdu_html=otp_html,
+        extra_english_text=otp_text,
+        extra_urdu_text=otp_text,
+    )
+
+
+def build_password_reset_email(first_name: str, otp: str, links: dict[str, str] | None = None) -> dict[str, str]:
+    from .content import PASSWORD_RESET_EMAIL
+
+    otp_html = (
+        f'<div style="margin: 24px 0; text-align: center;">'
+        f'<span style="background-color: #f8fafc; color: {NAVY}; font-size: 32px; '
+        f'font-weight: bold; letter-spacing: 4px; padding: 12px 30px; '
+        f'border: 2px solid #e2e8f0; border-radius: 8px; display: inline-block;'
+        f'font-family: Arial, sans-serif;">{otp}</span>'
+        f'</div>'
+    )
+    otp_text = f'\nVerification Code: {otp}\n'
+
+    return _build_simple_bilingual_email(
+        first_name=first_name,
+        email_content=PASSWORD_RESET_EMAIL,
+        links=links,
+        extra_english_html=otp_html,
+        extra_urdu_html=otp_html,
+        extra_english_text=otp_text,
+        extra_urdu_text=otp_text,
+    )
+
+
+def build_evening_reminder_email(
+    first_name: str,
+    *,
+    phase: int,
+    day_in_phase: int,
+    exercise_link: str | None = None,
+    links: dict[str, str] | None = None,
+) -> dict[str, str]:
+    from .booster_content import EVENING_REMINDER_EMAIL
+
+    links = links or get_email_links()
+    exercise_link = exercise_link or get_exercise_button_link()
+    subject_en = EVENING_REMINDER_EMAIL['subject_en'].format(phase=phase, day_in_phase=day_in_phase)
+    subject_ur = EVENING_REMINDER_EMAIL['subject_ur'].format(phase=phase, day_in_phase=day_in_phase)
+
+    lead_en = EVENING_REMINDER_EMAIL['lead_en'].format(
+        first_name=first_name, phase=phase, day_in_phase=day_in_phase,
+    )
+    lead_ur = EVENING_REMINDER_EMAIL['lead_ur'].format(
+        first_name=first_name, phase=phase, day_in_phase=day_in_phase,
+    )
+    cta_en, cta_ur, cta_en_text, cta_ur_text = _build_cta_button_html(
+        exercise_link,
+        EVENING_REMINDER_EMAIL['button_en'],
+        EVENING_REMINDER_EMAIL['button_ur'],
+    )
+
+    email_shell = {
+        'subject_en': subject_en,
+        'subject_ur': subject_ur,
+        'title_en': EVENING_REMINDER_EMAIL['title_en'],
+        'title_ur': EVENING_REMINDER_EMAIL['title_ur'],
+        'paragraphs_en': [lead_en.replace(f'Dear {first_name}, ', '')],
+        'paragraphs_ur': [lead_ur.replace(f'محترم {first_name}، ', '')],
+        'closing_en': '',
+        'closing_team_en': 'Psycheversity Research Team',
+        'closing_ur': '',
+        'closing_team_ur': 'سائیکیورسٹی ریسرچ ٹیم',
+    }
+    result = _build_simple_bilingual_email(
+        first_name,
+        email_shell,
+        links=links,
+        extra_english_html=cta_en,
+        extra_urdu_html=cta_ur,
+        extra_english_text=cta_en_text,
+        extra_urdu_text=cta_ur_text,
+    )
+    result['subject'] = build_bilingual_subject(subject_en, subject_ur)
+    return result
+
+
+def build_consecutive_misses_email(
+    first_name: str,
+    *,
+    phase: int,
+    day_in_phase: int,
+    exercise_link: str | None = None,
+    links: dict[str, str] | None = None,
+) -> dict[str, str]:
+    from .booster_content import CONSECUTIVE_MISSES_EMAIL
+
+    links = links or get_email_links()
+    exercise_link = exercise_link or get_exercise_button_link()
+    subject_en = CONSECUTIVE_MISSES_EMAIL['subject_en'].format(phase=phase)
+    subject_ur = CONSECUTIVE_MISSES_EMAIL['subject_ur'].format(phase=phase)
+
+    lead_en = CONSECUTIVE_MISSES_EMAIL['lead_en'].format(
+        first_name=first_name, phase=phase, day_in_phase=day_in_phase,
+    )
+    lead_ur = CONSECUTIVE_MISSES_EMAIL['lead_ur'].format(
+        first_name=first_name, phase=phase, day_in_phase=day_in_phase,
+    )
+    cta_en, cta_ur, cta_en_text, cta_ur_text = _build_cta_button_html(
+        exercise_link,
+        CONSECUTIVE_MISSES_EMAIL['button_en'],
+        CONSECUTIVE_MISSES_EMAIL['button_ur'],
+    )
+
+    email_shell = {
+        'subject_en': subject_en,
+        'subject_ur': subject_ur,
+        'title_en': CONSECUTIVE_MISSES_EMAIL['title_en'],
+        'title_ur': CONSECUTIVE_MISSES_EMAIL['title_ur'],
+        'paragraphs_en': [lead_en.replace(f'Dear {first_name}, ', '')],
+        'paragraphs_ur': [lead_ur.replace(f'محترم {first_name}، ', '')],
+        'closing_en': '',
+        'closing_team_en': 'Psycheversity Research Team',
+        'closing_ur': '',
+        'closing_team_ur': 'سائیکیورسٹی ریسرچ ٹیم',
+    }
+    result = _build_simple_bilingual_email(
+        first_name,
+        email_shell,
+        links=links,
+        extra_english_html=cta_en,
+        extra_urdu_html=cta_ur,
+        extra_english_text=cta_en_text,
+        extra_urdu_text=cta_ur_text,
+    )
+    result['subject'] = build_bilingual_subject(subject_en, subject_ur)
+    return result
+
+
