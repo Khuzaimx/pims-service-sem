@@ -1,8 +1,8 @@
 """E3–E12 booster / phase email copy from Psycheversity_Participant_Emails_Bilingual.docx."""
 
 DAILY_NUDGE_EMAIL = {
-    'subject_en': "Day {day_in_phase} of Phase {phase} : today's writing exercise",
-    'subject_ur': 'مرحلہ {phase} کا دن {day_in_phase} : آج کی تحریری مشق',
+    'subject_en': "Daily Activity Reminder",
+    'subject_ur': 'روزانہ کی سرگرمی کی یاد دہانی',
     'title_en': "Today's Writing Exercise",
     'title_ur': 'آج کی تحریری مشق',
     'lead_en': (

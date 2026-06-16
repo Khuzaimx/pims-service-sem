@@ -148,3 +148,14 @@ def send_socio_disqualification_email_task(self, user_id: int):
         if isinstance(exc, Retry):
             raise
         raise self.retry(exc=exc) from exc
+
+
+# Ensure Celery autodiscovery registers these tasks
+from .booster_tasks import (
+    send_booster_daily_nudges,
+    send_booster_phase_invites,
+    send_daily_nudge_email_task,
+    send_phase_invite_email_task,
+    send_phase_complete_email_task,
+)
+
