@@ -70,10 +70,10 @@ def test_send_daily_reflection_email_personalization(test_user):
     # Assert email was sent
     assert len(mail.outbox) == 1
     sent_email = mail.outbox[0]
-    assert "Day 1 of Phase 1" in sent_email.subject
+    assert "Daily Activity Reminder" in sent_email.subject
     assert sent_email.to == [test_user.email]
-    assert "Sarah" in sent_email.body
-    assert "Sarah" in sent_email.alternatives[0][0]
+    assert "Sarah" not in sent_email.body
+    assert "Sarah" not in sent_email.alternatives[0][0]
     assert "Start today's exercise" in sent_email.alternatives[0][0]
     assert "آج کی مشق شروع کریں" in sent_email.alternatives[0][0]
 
@@ -120,7 +120,7 @@ def test_send_daily_reflection_email_personalization(test_user):
     notif_due = Notification.objects.create(
         user=test_user,
         n_type='email',
-        message='Your 7-day post-test assessment is now due.',
+        message='Hello! Your 7-day post-test assessment is now due. Please complete it today!',
         scheduled_time=timezone.now(),
         status='pending'
     )
@@ -132,19 +132,22 @@ def test_send_daily_reflection_email_personalization(test_user):
     # Assert email was sent
     assert len(mail.outbox) == 1
     sent_email = mail.outbox[0]
-    assert sent_email.subject == "PIMS Assessment Due Reminder"
+    assert "Psycheversity Assessment Due Reminder" in sent_email.subject
+    assert "سائیکیورسٹی اسیسمنٹ کی یاد دہانی" in sent_email.subject
     assert sent_email.to == [test_user.email]
-    assert "Sarah Kim" in sent_email.body
+    assert "Sarah Kim" not in sent_email.body
     assert "Your 7-day post-test assessment is now due." in sent_email.body
     assert "Assessment Due Reminder" in sent_email.alternatives[0][0]
+    assert "اسیسمنٹ کی یاد دہانی" in sent_email.alternatives[0][0]
     assert "Go to Dashboard" in sent_email.alternatives[0][0]
+    assert "ڈیش بورڈ پر جائیں" in sent_email.alternatives[0][0]
 
     # 3. Notification without "reflection" in message (milestone/assessment overdue, should send overdue email)
     mail.outbox = []
     notif_overdue = Notification.objects.create(
         user=test_user,
         n_type='email',
-        message='Reminder: Your 3-month follow-up assessment is overdue.',
+        message='Reminder: Your 3-month follow-up assessment is overdue. Please complete it at your earliest convenience.',
         scheduled_time=timezone.now(),
         status='pending'
     )
@@ -156,12 +159,16 @@ def test_send_daily_reflection_email_personalization(test_user):
     # Assert email was sent
     assert len(mail.outbox) == 1
     sent_email_od = mail.outbox[0]
-    assert sent_email_od.subject == "PIMS Assessment Overdue Reminder"
+    assert "Psycheversity Assessment Overdue Reminder" in sent_email_od.subject
+    assert "سائیکیورسٹی اسیسمنٹ کے وقت گزرنے کی یاد دہانی" in sent_email_od.subject
     assert sent_email_od.to == [test_user.email]
-    assert "Sarah Kim" in sent_email_od.body
+    assert "Sarah Kim" not in sent_email_od.body
     assert "Reminder: Your 3-month follow-up assessment is overdue." in sent_email_od.body
     assert "Assessment Overdue Reminder" in sent_email_od.alternatives[0][0]
+    assert "اسیسمنٹ کے وقت گزرنے کی یاد دہانی" in sent_email_od.alternatives[0][0]
     assert "Go to Dashboard" in sent_email_od.alternatives[0][0]
+    assert "ڈیش بورڈ پر جائیں" in sent_email_od.alternatives[0][0]
+
 
 
 @pytest.mark.django_db

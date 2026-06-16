@@ -261,3 +261,26 @@ PASSWORD_RESET_EMAIL = {
     'closing_team_ur': 'سائیکیورسٹی ریسرچ ٹیم',
 }
 
+ASSESSMENT_DUE_EMAIL = {
+    'subject_en': 'Psycheversity Assessment Due Reminder',
+    'subject_ur': 'سائیکیورسٹی اسیسمنٹ کی یاد دہانی',
+    'title_en': 'Assessment Due Reminder',
+    'title_ur': 'اسیسمنٹ کی یاد دہانی',
+    'closing_en': 'Warm regards,',
+    'closing_team_en': 'Psycheversity Research Team',
+    'closing_ur': 'نیک تمناؤں کے ساتھ،',
+    'closing_team_ur': 'سائیکیورسٹی ریسرچ ٹیم',
+}
+
+ASSESSMENT_OVERDUE_EMAIL = {
+    'subject_en': 'Psycheversity Assessment Overdue Reminder',
+    'subject_ur': 'سائیکیورسٹی اسیسمنٹ کے وقت گزرنے کی یاد دہانی',
+    'title_en': 'Assessment Overdue Reminder',
+    'title_ur': 'اسیسمنٹ کے وقت گزرنے کی یاد دہانی',
+    'closing_en': 'Warm regards,',
+    'closing_team_en': 'Psycheversity Research Team',
+    'closing_ur': 'نیک تمناؤں کے ساتھ،',
+    'closing_team_ur': 'سائیکیورسٹی ریسرچ ٹیم',
+}
+
+

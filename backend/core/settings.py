@@ -323,7 +323,7 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='no-reply@psycheversity.c
 SITE_BASE_URL = env('SITE_BASE_URL', default='https://psycheversity.com')
 PARTICIPANT_EMAIL_FROM = env(
     'PARTICIPANT_EMAIL_FROM',
-    default='Psycheversity Research Team <support@psycheversity.com>',
+    default='Psycheversity Research Team <no-reply@psycheversity.com>',
 )
 PARTICIPANT_EMAIL_REPLY_TO = env('PARTICIPANT_EMAIL_REPLY_TO', default='support@psycheversity.com')
 PARTICIPANT_WITHDRAW_URL = env('PARTICIPANT_WITHDRAW_URL', default='')

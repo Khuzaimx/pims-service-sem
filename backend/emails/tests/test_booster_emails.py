@@ -21,8 +21,8 @@ from emails.builder import build_daily_nudge_email, build_phase_invite_email
 def test_build_daily_nudge_email_is_bilingual():
     content = build_daily_nudge_email('Sara', phase=1, day_in_phase=3)
 
-    assert 'Day 3 of Phase 1' in content['subject']
-    assert 'مرحلہ 1 کا دن 3' in content['subject']
+    assert 'Daily Activity Reminder' in content['subject']
+    assert 'روزانہ کی سرگرمی کی یاد دہانی' in content['subject']
     assert 'Start today\'s exercise' in content['html_content']
     assert 'آج کی مشق شروع کریں' in content['html_content']
     assert '/dashboard' in content['html_content']
@@ -66,7 +66,7 @@ def test_send_daily_nudge_email_task(test_user):
 
     assert result['status'] == 'sent'
     assert len(mail.outbox) == 1
-    assert 'Day 2 of Phase 1' in mail.outbox[0].subject
+    assert 'Daily Activity Reminder' in mail.outbox[0].subject
 
     result_again = send_daily_nudge_email_task(
         test_user.user_id,
