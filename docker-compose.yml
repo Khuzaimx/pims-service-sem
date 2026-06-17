@@ -63,9 +63,9 @@ services:
       EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
       EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-no-reply@psycheversity.com}
-      PARTICIPANT_EMAIL_FROM: ${PARTICIPANT_EMAIL_FROM:-Psycheversity Research Team <support@psycheversity.com>}
+      PARTICIPANT_EMAIL_FROM: ${PARTICIPANT_EMAIL_FROM:-Psycheversity Research Team <no-reply@psycheversity.com>}
       PARTICIPANT_EMAIL_REPLY_TO: ${PARTICIPANT_EMAIL_REPLY_TO:-support@psycheversity.com}
-      SITE_BASE_URL: ${SITE_BASE_URL:-http://localhost}
+      SITE_BASE_URL: ${SITE_BASE_URL:-https://psycheversity.com}
       TZ: Asia/Karachi
     depends_on:
       db:
@@ -98,9 +98,9 @@ services:
       EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
       EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-no-reply@psycheversity.com}
-      PARTICIPANT_EMAIL_FROM: ${PARTICIPANT_EMAIL_FROM:-Psycheversity Research Team <support@psycheversity.com>}
+      PARTICIPANT_EMAIL_FROM: ${PARTICIPANT_EMAIL_FROM:-Psycheversity Research Team <no-reply@psycheversity.com>}
       PARTICIPANT_EMAIL_REPLY_TO: ${PARTICIPANT_EMAIL_REPLY_TO:-support@psycheversity.com}
-      SITE_BASE_URL: ${SITE_BASE_URL:-http://localhost}
+      SITE_BASE_URL: ${SITE_BASE_URL:-https://psycheversity.com}
       TZ: Asia/Karachi
     depends_on:
       db:
@@ -132,9 +132,9 @@ services:
       EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
       EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-no-reply@psycheversity.com}
-      PARTICIPANT_EMAIL_FROM: ${PARTICIPANT_EMAIL_FROM:-Psycheversity Research Team <support@psycheversity.com>}
+      PARTICIPANT_EMAIL_FROM: ${PARTICIPANT_EMAIL_FROM:-Psycheversity Research Team <no-reply@psycheversity.com>}
       PARTICIPANT_EMAIL_REPLY_TO: ${PARTICIPANT_EMAIL_REPLY_TO:-support@psycheversity.com}
-      SITE_BASE_URL: ${SITE_BASE_URL:-http://localhost}
+      SITE_BASE_URL: ${SITE_BASE_URL:-https://psycheversity.com}
       TZ: Asia/Karachi
     depends_on:
       db:

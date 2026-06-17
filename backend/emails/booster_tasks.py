@@ -17,9 +17,8 @@ from .builder import (
     build_phase_invite_email,
     get_first_name,
 )
-from .tasks import _send_participant_email
-
 logger = logging.getLogger(__name__)
+
 User = get_user_model()
 
 
@@ -55,6 +54,7 @@ def send_daily_nudge_email_task(self, user_id: int, *, wave: str, phase: int, da
     )
 
     try:
+        from .tasks import _send_participant_email
         _send_participant_email(email_content, user.email)
         cache.set(cache_key, True, timeout=86400)
         logger.info(
@@ -88,6 +88,7 @@ def send_phase_invite_email_task(self, user_id: int, invite_key: str):
     email_content = build_phase_invite_email(first_name, invite_key)
 
     try:
+        from .tasks import _send_participant_email
         _send_participant_email(email_content, user.email)
         cache.set(cache_key, True, timeout=86400 * 400)
         logger.info('Sent phase invite (%s) to %s', invite_key, user.email)
@@ -121,6 +122,7 @@ def send_phase_complete_email_task(
     attachment_tuples = attachments or []
 
     try:
+        from .tasks import _send_participant_email
         _send_participant_email(email_content, user.email, attachments=attachment_tuples)
         logger.info('Sent phase complete email (%s) to %s', template_key, user.email)
         return {'status': 'sent', 'recipient': user.email}

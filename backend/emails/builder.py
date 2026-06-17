@@ -276,31 +276,35 @@ def _build_simple_bilingual_email(
     </html>
     """
 
-    text_content = '\n\n'.join([
+    text_content_blocks = [
         email_content['subject_en'],
         '',
-        f'Dear {first_name},',
-        *email_content['paragraphs_en'],
-        extra_english_text,
-        email_content['closing_en'],
-        email_content['closing_team_en'],
-        '',
-        email_content['subject_ur'],
-        '',
-        f'محترم {first_name}،',
-        *email_content['paragraphs_ur'],
-        extra_urdu_text,
-        email_content['closing_ur'],
-        email_content['closing_team_ur'],
-        '',
-        STANDARD_FOOTER['paragraphs_en'][0].format(**links),
-        STANDARD_FOOTER['paragraphs_en'][1].format(**links),
-        STANDARD_FOOTER['paragraphs_en'][2],
-        '',
-        STANDARD_FOOTER['paragraphs_ur'][0].format(**links),
-        STANDARD_FOOTER['paragraphs_ur'][1].format(**links),
-        STANDARD_FOOTER['paragraphs_ur'][2],
-    ])
+    ]
+    if first_name:
+        text_content_blocks.append(f'Dear {first_name},')
+    text_content_blocks.extend(email_content['paragraphs_en'])
+    text_content_blocks.append(extra_english_text)
+    text_content_blocks.append(email_content['closing_en'])
+    text_content_blocks.append(email_content['closing_team_en'])
+    text_content_blocks.append('')
+    text_content_blocks.append(email_content['subject_ur'])
+    text_content_blocks.append('')
+    if first_name:
+        text_content_blocks.append(f'محترم {first_name}،')
+    text_content_blocks.extend(email_content['paragraphs_ur'])
+    text_content_blocks.append(extra_urdu_text)
+    text_content_blocks.append(email_content['closing_ur'])
+    text_content_blocks.append(email_content['closing_team_ur'])
+    text_content_blocks.append('')
+    text_content_blocks.append(STANDARD_FOOTER['paragraphs_en'][0].format(**links))
+    text_content_blocks.append(STANDARD_FOOTER['paragraphs_en'][1].format(**links))
+    text_content_blocks.append(STANDARD_FOOTER['paragraphs_en'][2])
+    text_content_blocks.append('')
+    text_content_blocks.append(STANDARD_FOOTER['paragraphs_ur'][0].format(**links))
+    text_content_blocks.append(STANDARD_FOOTER['paragraphs_ur'][1].format(**links))
+    text_content_blocks.append(STANDARD_FOOTER['paragraphs_ur'][2])
+    
+    text_content = '\n\n'.join(text_content_blocks)
 
     return {
         'subject': subject,
@@ -489,7 +493,7 @@ def build_daily_nudge_email(
         'closing_team_ur': 'سائیکیورسٹی ریسرچ ٹیم',
     }
     result = _build_simple_bilingual_email(
-        first_name,
+        "",  # Empty string so no greeting is rendered in HTML or text
         email_shell,
         links=links,
         extra_english_html=cta_en,
@@ -688,5 +692,92 @@ def build_consecutive_misses_email(
     )
     result['subject'] = build_bilingual_subject(subject_en, subject_ur)
     return result
+
+
+def build_assessment_due_email(message_en: str, links: dict[str, str] | None = None) -> dict[str, str]:
+    from .content import ASSESSMENT_DUE_EMAIL, ASSESSMENT_OVERDUE_EMAIL
+
+    # Normalize message for matching
+    msg_norm = message_en.strip()
+
+    # Determine if overdue or due
+    is_overdue = 'overdue' in msg_norm.lower()
+    email_content = ASSESSMENT_OVERDUE_EMAIL if is_overdue else ASSESSMENT_DUE_EMAIL
+
+    # Paragraph mapping
+    # Maps exact English message to Urdu message
+    mapping = {
+        # Standard Due
+        "Hello! Your 7-day post-test assessment is now due. Please complete it today!":
+            "السلام علیکم! آپ کا 7 روزہ پوسٹ ٹیسٹ اسیسمنٹ اب دستیاب ہے۔ براہِ کرم اسے آج ہی مکمل کریں۔",
+        "Hello! Your 1-month follow-up assessment is now due. Please complete it today!":
+            "السلام علیکم! آپ کا 1 ماہ کا فالو اپ اسیسمنٹ اب دستیاب ہے۔ براہِ کرم اسے آج ہی مکمل کریں۔",
+        "Hello! Your 3-month follow-up assessment is now due. Please complete it today!":
+            "السلام علیکم! آپ کا 3 ماہ کا فالو اپ اسیسمنٹ اب دستیاب ہے۔ براہِ کرم اسے آج ہی مکمل کریں۔",
+        "Hello! Your 6-month follow-up assessment is now due. Please complete it today!":
+            "السلام علیکم! آپ کا 6 ماہ کا فالو اپ اسیسمنٹ اب دستیاب ہے۔ براہِ کرم اسے آج ہی مکمل کریں۔",
+        "Hello! Your 1-year follow-up assessment is now due. Please complete it today!":
+            "السلام علیکم! آپ کا 1 سال کا فالو اپ اسیسمنٹ اب دستیاب ہے۔ براہِ کرم اسے آج ہی مکمل کریں۔",
+
+        # Final Re-engagement
+        "PIMS Final Re-engagement: We noticed you missed your previous follow-ups. This is our final attempt to re-engage you for the 7-day post-test assessment. Please complete it to stay active in the study.":
+            "پی آئی ایم ایس فائنل دوبارہ شمولیت: ہم نے دیکھا کہ آپ پچھلے فالو اپس مکمل نہیں کر پائے۔ یہ آپ کو 7 روزہ پوسٹ ٹیسٹ اسیسمنٹ کے لیے شامل کرنے کی ہماری آخری کوشش ہے۔ مطالعہ میں فعال رہنے کے لیے براہِ کرم اسے مکمل کریں۔",
+        "PIMS Final Re-engagement: We noticed you missed your previous follow-ups. This is our final attempt to re-engage you for the 1-month follow-up assessment. Please complete it to stay active in the study.":
+            "پی آئی ایم ایس فائنل دوبارہ شمولیت: ہم نے دیکھا کہ آپ پچھلے فالو اپس مکمل نہیں کر پائے۔ یہ آپ کو 1 ماہ کے فالو اپ اسیسمنٹ کے لیے شامل کرنے کی ہماری آخری کوشش ہے۔ مطالعہ میں فعال رہنے کے لیے براہِ کرم اسے مکمل کریں۔",
+        "PIMS Final Re-engagement: We noticed you missed your previous follow-ups. This is our final attempt to re-engage you for the 3-month follow-up assessment. Please complete it to stay active in the study.":
+            "پی آئی ایم ایس فائنل دوبارہ شمولیت: ہم نے دیکھا کہ آپ پچھلے فالو اپس مکمل نہیں کر پائے۔ یہ آپ کو 3 ماہ کے فالو اپ اسیسمنٹ کے لیے شامل کرنے کی ہماری آخری کوشش ہے۔ مطالعہ میں فعال رہنے کے لیے براہِ کرم اسے مکمل کریں۔",
+        "PIMS Final Re-engagement: We noticed you missed your previous follow-ups. This is our final attempt to re-engage you for the 6-month follow-up assessment. Please complete it to stay active in the study.":
+            "پی آئی ایم ایس فائنل دوبارہ شمولیت: ہم نے دیکھا کہ آپ پچھلے فالو اپس مکمل نہیں کر پائے۔ یہ آپ کو 6 ماہ کے فالو اپ اسیسمنٹ کے لیے شامل کرنے کی ہماری آخری کوشش ہے۔ مطالعہ میں فعال رہنے کے لیے براہِ کرم اسے مکمل کریں۔",
+        "PIMS Final Re-engagement: We noticed you missed your previous follow-ups. This is our final attempt to re-engage you for the 1-year follow-up assessment. Please complete it to stay active in the study.":
+            "پی آئی ایم ایس فائنل دوبارہ شمولیت: ہم نے دیکھا کہ آپ پچھلے فالو اپس مکمل نہیں کر پائے۔ یہ آپ کو 1 سال کے فالو اپ اسیسمنٹ کے لیے شامل کرنے کی ہماری آخری کوشش ہے۔ مطالعہ میں فعال رہنے کے لیے براہِ کرم اسے مکمل کریں۔",
+
+        # Overdue (1 Day Overdue)
+        "Reminder: Your 7-day post-test assessment is overdue. Please complete it at your earliest convenience.":
+            "یاد دہانی: آپ کا 7 روزہ پوسٹ ٹیسٹ اسیسمنٹ اب واجب الادہ ہے۔ براہِ کرم اسے اپنی اولین فرصت میں مکمل کریں۔",
+        "Reminder: Your 1-month follow-up assessment is overdue. Please complete it at your earliest convenience.":
+            "یاد دہانی: آپ کا 1 ماہ کا فالو اپ اسیسمنٹ اب واجب الادہ ہے۔ براہِ کرم اسے اپنی اولین فرصت میں مکمل کریں۔",
+        "Reminder: Your 3-month follow-up assessment is overdue. Please complete it at your earliest convenience.":
+            "یاد دہانی: آپ کا 3 ماہ کا فالو اپ اسیسمنٹ اب واجب الادہ ہے۔ براہِ کرم اسے اپنی اولین فرصت میں مکمل کریں۔",
+        "Reminder: Your 6-month follow-up assessment is overdue. Please complete it at your earliest convenience.":
+            "یاد دہانی: آپ کا 6 ماہ کا فالو اپ اسیسمنٹ اب واجب الادہ ہے۔ براہِ کرم اسے اپنی اولین فرصت میں مکمل کریں۔",
+        "Reminder: Your 1-year follow-up assessment is overdue. Please complete it at your earliest convenience.":
+            "یاد دہانی: آپ کا 1 سال کا فالو اپ اسیسمنٹ اب واجب الادہ ہے۔ براہِ کرم اسے اپنی اولین فرصت میں مکمل کریں۔",
+    }
+
+    message_ur = mapping.get(msg_norm, "براہِ کرم اپنی اسیسمنٹ مکمل کرنے کے لیے اپنے ڈیش بورڈ پر جائیں۔")
+
+    # Build the CTA button
+    dashboard_link = get_exercise_button_link()
+    cta_en_button, cta_ur_button, cta_en_text, cta_ur_text = _build_cta_button_html(
+        dashboard_link,
+        "Go to Dashboard",
+        "ڈیش بورڈ پر جائیں"
+    )
+
+    email_shell = {
+        'subject_en': email_content['subject_en'],
+        'subject_ur': email_content['subject_ur'],
+        'title_en': email_content['title_en'],
+        'title_ur': email_content['title_ur'],
+        'paragraphs_en': [message_en],
+        'paragraphs_ur': [message_ur],
+        'closing_en': email_content['closing_en'],
+        'closing_team_en': email_content['closing_team_en'],
+        'closing_ur': email_content['closing_ur'],
+        'closing_team_ur': email_content['closing_team_ur'],
+    }
+
+    # Use empty first name to prevent personal greeting in header ("Dear Name" / "Hi Name")
+    result = _build_simple_bilingual_email(
+        first_name="",
+        email_content=email_shell,
+        links=links,
+        extra_english_html=cta_en_button,
+        extra_urdu_html=cta_ur_button,
+        extra_english_text=cta_en_text,
+        extra_urdu_text=cta_ur_text,
+    )
+    return result
+
 
 
