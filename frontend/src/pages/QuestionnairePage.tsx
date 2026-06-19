@@ -666,6 +666,51 @@ const QuestionnairePage: React.FC = () => {
           className="space-y-12"
         >
           <div className="space-y-8">
+            {/* PHQ-9 / GAD-7 Response Key — bilingual legend */}
+            {(currentScaleGroup.name === 'PHQ-9' || currentScaleGroup.name === 'GAD-7') && (
+              <div className="border border-zinc-200 rounded-xl p-5 md:p-6 bg-zinc-50/80 shadow-sm">
+                <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">Response Key / جوابات کی کنجی</div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { val: 0, en: 'Not at all', ur: 'بالکل نہیں' },
+                    { val: 1, en: 'Several days', ur: 'کئی دن' },
+                    { val: 2, en: 'More than half the days', ur: 'ایک ہفتے سے زیادہ' },
+                    { val: 3, en: 'Nearly every day', ur: 'تقریباً روزانہ' },
+                  ].map((anchor) => (
+                    <div key={anchor.val} className="flex flex-col items-center text-center border border-zinc-200 rounded-lg bg-white px-2 py-3 gap-1">
+                      <span className="text-lg font-bold text-zinc-700">{anchor.val}</span>
+                      <span className="text-[11px] font-medium text-zinc-600 leading-tight">{anchor.en}</span>
+                      <span className="text-[11px] font-medium text-zinc-500 font-urdu leading-tight" dir="rtl">{anchor.ur}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Gratitude Response Key — stem + bilingual legend */}
+            {currentScaleGroup.name === 'Gratitude' && (
+              <div className="border border-zinc-200 rounded-xl p-5 md:p-6 bg-zinc-50/80 shadow-sm space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-3 border-b border-zinc-200">
+                  <p className="text-sm font-medium text-zinc-700 leading-relaxed">Please indicate how strongly you agree with each statement.</p>
+                  <p className="text-sm font-medium text-zinc-700 leading-relaxed font-urdu text-right" dir="rtl">براہ کرم نشاندہی کیجیے کہ آپ ہر بیان سے کس حد تک متفق ہیں۔</p>
+                </div>
+                <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Response Key / جوابات کی کنجی</div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                  {[
+                    { val: 0, en: 'Completely disagree', ur: 'بالکل غیر متفق' },
+                    { val: 1, en: 'Disagree', ur: 'غیر متفق' },
+                    { val: 2, en: 'Neutral', ur: 'غیر جانبدار' },
+                    { val: 3, en: 'Agree', ur: 'متفق' },
+                    { val: 4, en: 'Completely agree', ur: 'مکمل متفق' },
+                  ].map((anchor) => (
+                    <div key={anchor.val} className="flex flex-col items-center text-center border border-zinc-200 rounded-lg bg-white px-2 py-3 gap-1">
+                      <span className="text-lg font-bold text-zinc-700">{anchor.val}</span>
+                      <span className="text-[11px] font-medium text-zinc-600 leading-tight">{anchor.en}</span>
+                      <span className="text-[11px] font-medium text-zinc-500 font-urdu leading-tight" dir="rtl">{anchor.ur}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {/* PANAS Response Key — bilingual legend */}
             {currentScaleGroup.name === 'PANAS' && (
               <div className="border border-zinc-200 rounded-xl p-5 md:p-6 bg-zinc-50/80 shadow-sm">

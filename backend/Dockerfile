@@ -36,7 +36,7 @@ RUN fc-cache -f -v
 COPY . /app/
 
 # Make entrypoint executable and ensure LF line endings
-RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+RUN tr -d '\015' < /app/entrypoint.sh > /tmp/ep.sh && mv /tmp/ep.sh /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 # Environment variables for collectstatic
 ENV SECRET_KEY=collectstatic-dummy-key

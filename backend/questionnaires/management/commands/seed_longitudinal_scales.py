@@ -401,7 +401,7 @@ class Command(BaseCommand):
                 # --- GAD-7 questions ---
                 # Section header (bilingual, display-only, not scored)
                 {
-                    "content": "[GAD-7] During the past two weeks, how much have the following problems bothered you? | گزشتہ دو ہفتوں کے دوران مندرجہ ذیل مسائل نے آپ کو کتنا پریشان کیا؟",
+                    "content": "[GAD-7] Over the last 2 weeks, how often have you been bothered by the following problems? | گزشتہ دو ہفتوں کے دوران مندرجہ ذیل مسائل نے آپ کو کتنا پریشان کیا؟",
                     "type": "TEXT",
                     "order": 34,
                     "required": False,
@@ -453,7 +453,7 @@ class Command(BaseCommand):
                 # --- PANAS questions ---
                 # Section header (bilingual, display-only, not scored)
                 {
-                    "content": "[PANAS] People experience a range of feelings and emotions in their lives. Indicate to what extent you feel the following emotions. Please mark only one answer for each item that best reflects your emotions. | لوگ اپنی زندگی میں مختلف جذبات محسوس کرتے ہیں۔ آپ مندرجہ ذیل جذبات کس حد تک محسوس کرتے ہیں۔ برائے مہربانی ہر سوال کے لیے صرف ایک جواب کی نشاندہی کیجیے جو آپ کے جذبات کی الگ عکاسی کرنا ہو۔",
+                    "content": "[PANAS] Indicate the extent you feel this way in general. | لوگ اپنی زندگی میں مختلف قسم کے جذبات محسوس کرتے ہیں۔ آپ مندرجہ ذیل جذبات کس حد تک محسوس کرتے ہیں؟",
                     "type": "TEXT",
                     "order": 42,
                     "required": False,
