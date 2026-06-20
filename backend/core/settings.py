@@ -241,7 +241,7 @@ REST_FRAMEWORK = {
 
 # JWT Settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=30), # Logged in for 30 days
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=5),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=90),
     'ROTATE_REFRESH_TOKENS': True,
     'ALGORITHM': 'HS256',
@@ -302,6 +302,10 @@ CELERY_BEAT_SCHEDULE = {
     'daily-suicide-risk-admin-cache': {
         'task': 'questionnaires.tasks.refresh_suicide_risk_admin_cache_task',
         'schedule': crontab(hour=3, minute=0),
+    },
+    'perma-report-catchup': {
+        'task': 'questionnaires.tasks.check_and_send_perma_reports',
+        'schedule': crontab(hour=8, minute=0),
     },
 }
 # Spectacular Settings
