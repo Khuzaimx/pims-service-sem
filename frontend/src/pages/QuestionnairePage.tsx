@@ -291,9 +291,9 @@ const QuestionnairePage: React.FC = () => {
   };
 
   const checkSuicideRiskLocal = (): boolean => {
-    // 1. PHQ-9 Item 9 >= 1
-    const phq9Item9Q = questions.find((q: any) => 
-      q.order === 32 || 
+    // 1. PHQ-9 Item 9 >= 1  (order 33 after header insertion)
+    const phq9Item9Q = questions.find((q: any) =>
+      q.order === 33 ||
       (q.content.includes('[PHQ-9]') && q.content.toLowerCase().includes('dead'))
     );
     if (phq9Item9Q) {
@@ -303,8 +303,8 @@ const QuestionnairePage: React.FC = () => {
       }
     }
 
-    // 2. SIDAS Item 3 > 0
-    const sidasItem3Q = questions.find((q: any) => q.order === 77);
+    // 2. SIDAS Item 3 > 0  (order 80 after header insertion)
+    const sidasItem3Q = questions.find((q: any) => q.order === 80);
     if (sidasItem3Q) {
       const val = getNumericValueForResponse(sidasItem3Q, responses[sidasItem3Q.id]);
       if (val !== undefined && val > 0) {
@@ -312,12 +312,12 @@ const QuestionnairePage: React.FC = () => {
       }
     }
 
-    // 3. SIDAS Total >= 21
-    const sidasQ1 = questions.find((q: any) => q.order === 75);
-    const sidasQ2 = questions.find((q: any) => q.order === 76);
-    const sidasQ3 = questions.find((q: any) => q.order === 77);
-    const sidasQ4 = questions.find((q: any) => q.order === 78);
-    const sidasQ5 = questions.find((q: any) => q.order === 79);
+    // 3. SIDAS Total >= 21  (orders 78-82 after header insertion)
+    const sidasQ1 = questions.find((q: any) => q.order === 78);
+    const sidasQ2 = questions.find((q: any) => q.order === 79);
+    const sidasQ3 = questions.find((q: any) => q.order === 80);
+    const sidasQ4 = questions.find((q: any) => q.order === 81);
+    const sidasQ5 = questions.find((q: any) => q.order === 82);
 
     if (sidasQ1) {
       const val1 = getNumericValueForResponse(sidasQ1, responses[sidasQ1.id]);
@@ -698,6 +698,7 @@ const QuestionnairePage: React.FC = () => {
                   return null;
                 }
               }
+
               const { english, urdu } = splitQuestionContent(question.content);
 
               // Non-required TEXT questions are section headers / instructions.
@@ -722,7 +723,6 @@ const QuestionnairePage: React.FC = () => {
                         <p className="text-sm md:text-base font-medium text-zinc-700 leading-relaxed">{english}</p>
                       )}
                     </div>
-                    {/* PHQ-9 / GAD-7 response key — appears below the stem */}
                     {isPhqGad && (
                       <div className="border border-zinc-200 rounded-xl p-5 md:p-6 bg-zinc-50/80 shadow-sm">
                         <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">Response Key / جوابات کی کنجی</div>
@@ -742,7 +742,6 @@ const QuestionnairePage: React.FC = () => {
                         </div>
                       </div>
                     )}
-                    {/* PANAS response key — appears below the stem */}
                     {isPanas && (
                       <div className="border border-zinc-200 rounded-xl p-5 md:p-6 bg-zinc-50/80 shadow-sm">
                         <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">Response Key / جوابات کی کنجی</div>
@@ -768,10 +767,15 @@ const QuestionnairePage: React.FC = () => {
               }
 
               // Count only scorable questions (skip non-required TEXT headers) for the counter
+              const scorableQuestions = currentScaleGroup.questions.filter(
+                (q: any) => !(q.type === 'TEXT' && !q.required)
+              );
+              const scorableIdx = scorableQuestions.indexOf(question);
+
               return (
                 <div key={question.id} className="border border-zinc-200 rounded-xl p-6 md:p-8 bg-white shadow-sm space-y-6">
                   <div className="flex justify-between items-center pb-4 border-b border-zinc-100">
-                    <span className="text-xs font-medium text-zinc-400">Question {idx + 1} of {currentScaleGroup.questions.length}</span>
+                    <span className="text-xs font-medium text-zinc-400">Question {scorableIdx + 1} of {scorableQuestions.length}</span>
                     {question.required && <span className="text-xs font-semibold text-zinc-400">* Required</span>}
                   </div>
                   
