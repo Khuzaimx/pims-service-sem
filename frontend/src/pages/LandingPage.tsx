@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Phone, Mail, HelpCircle, FileText, ShieldAlert, Home, Info, ExternalLink } from 'lucide-react';
+import { ArrowRight, Phone, Mail, HelpCircle, FileText, ShieldAlert, Home, Info, ExternalLink, ChevronDown } from 'lucide-react';
 import pimsLogo from '../assets/pims_logo.png';
 import ukmLogo from '../assets/ukm_logo.jpeg';
 
@@ -152,8 +152,19 @@ const BilingualHelpline: React.FC<{ nameEn: string; nameUr: string; phone: strin
   </div>
 );
 
+const NAV_ITEMS = [
+  { id: 'home', en: 'Home', ur: 'ہوم', icon: <Home size={16} /> },
+  { id: 'info', en: 'Information', ur: 'معلومات', icon: <Info size={16} /> },
+  { id: 'faq', en: 'FAQ', ur: 'سوالات', icon: <HelpCircle size={16} /> },
+  { id: 'crisis', en: 'Crisis Resources', ur: 'ہنگامی مدد', icon: <ShieldAlert size={16} /> },
+  { id: 'contact', en: 'Contact', ur: 'رابطہ', icon: <Mail size={16} /> },
+  { id: 'register', en: 'Registration', ur: 'رجسٹریشن', icon: <FileText size={16} /> },
+] as const;
+
 const LandingPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'home' | 'info' | 'faq' | 'crisis' | 'contact' | 'register'>('home');
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const activeNavItem = NAV_ITEMS.find(t => t.id === activeTab)!;
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-6 md:py-10 flex flex-col gap-8">
@@ -178,35 +189,55 @@ const LandingPage: React.FC = () => {
         </div>
       </header>
 
+      {/* Mobile Nav Dropdown — visible only below lg */}
+      <div className="lg:hidden relative">
+        <button
+          onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
+          className="w-full flex items-center justify-between gap-3 bg-white border border-zinc-200 rounded-xl px-4 py-3 shadow-sm font-semibold text-sm text-zinc-700"
+        >
+          <span className="flex items-center gap-2 text-[#2E4E90]">
+            <span className="text-zinc-500">{activeNavItem.icon}</span>
+            {activeNavItem.en}
+            <span className="font-urdu text-zinc-500 text-xs" dir="rtl">{activeNavItem.ur}</span>
+          </span>
+          <ChevronDown size={18} className={`text-zinc-400 transition-transform duration-200 ${isMobileNavOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {isMobileNavOpen && (
+          <div className="absolute top-full left-0 right-0 z-40 mt-1 bg-white border border-zinc-200 rounded-xl shadow-lg overflow-hidden">
+            {NAV_ITEMS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => { setActiveTab(tab.id as any); setIsMobileNavOpen(false); }}
+                className={`w-full flex items-center justify-between gap-3 px-4 py-3 text-sm font-semibold border-b border-zinc-100 last:border-0 transition-colors ${activeTab === tab.id ? 'bg-[#2E4E90] text-white' : 'text-zinc-700 hover:bg-zinc-50'}`}
+              >
+                <span className="flex items-center gap-2">{tab.icon} {tab.en}</span>
+                <span className="font-urdu text-xs" dir="rtl">{tab.ur}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Main Microsite Body */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-        {/* Navigation Sidebar */}
-        <aside className="lg:col-span-1 bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm">
-          <nav className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-col gap-2">
-            {[
-              { id: 'home', en: 'Home', ur: 'ہوم', icon: <Home size={16} /> },
-              { id: 'info', en: 'Information', ur: 'معلومات', icon: <Info size={16} /> },
-              { id: 'faq', en: 'FAQ', ur: 'سوالات', icon: <HelpCircle size={16} /> },
-              { id: 'crisis', en: 'Crisis Resources', ur: 'ہنگامی مدد', icon: <ShieldAlert size={16} /> },
-              { id: 'contact', en: 'Contact', ur: 'رابطہ', icon: <Mail size={16} /> },
-              { id: 'register', en: 'Registration', ur: 'رجسٹریشن', icon: <FileText size={16} /> }
-            ].map((tab) => (
+        {/* Navigation Sidebar — desktop only */}
+        <aside className="hidden lg:block lg:col-span-1 bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm">
+          <nav className="flex flex-col gap-2">
+            {NAV_ITEMS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex flex-col lg:flex-row items-center lg:justify-between gap-1 lg:gap-4 w-full px-3 py-3 lg:px-4 rounded-xl font-semibold text-xs md:text-sm transition-all text-center lg:text-left outline-none border-b-2 lg:border-b-0 lg:border-l-4 ${
+                className={`flex flex-row items-center justify-between gap-4 w-full px-4 py-3 rounded-xl font-semibold text-sm transition-all text-left outline-none border-l-4 ${
                   activeTab === tab.id
                     ? 'bg-[#2E4E90] text-white border-[#C8A951] shadow-md'
                     : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 border-transparent'
                 }`}
               >
-                <div className="flex flex-col lg:flex-row items-center gap-1.5">
-                  <span className={activeTab === tab.id ? 'text-white' : 'text-zinc-500'}>
-                    {tab.icon}
-                  </span>
-                  <span className="font-latin text-[11px] sm:text-xs lg:text-sm">{tab.en}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className={activeTab === tab.id ? 'text-white' : 'text-zinc-500'}>{tab.icon}</span>
+                  <span className="font-latin">{tab.en}</span>
                 </div>
-                <span className="font-urdu text-[10px] sm:text-xs lg:text-sm leading-none lg:mt-0 mt-0.5">{tab.ur}</span>
+                <span className="font-urdu text-sm leading-none">{tab.ur}</span>
               </button>
             ))}
           </nav>
@@ -226,6 +257,29 @@ const LandingPage: React.FC = () => {
                   en="Positive Psychology is the scientific study of what makes life most worth living. Researchers in this field design and test simple, evidence-based activities that can help people build wellbeing, gratitude, and a sense of meaning in everyday life. This program has been developed according to that scientific tradition."
                   ur="مثبت نفسیات اس بات کا سائنسی مطالعہ ہے کہ زندگی کو سب سے زیادہ قابلِ قدر کیا چیز بناتی ہے۔ اس شعبے کے محققین سادہ اور شواہد پر مبنی سرگرمیاں تیار اور جانچتے ہیں جو روزمرہ زندگی میں فلاح، شکرگزاری اور بامقصد ہونے کے احساس کو بڑھانے میں مدد دے سکتی ہیں۔ یہ پروگرام اسی سائنسی روایت کے مطابق تیار کیا گیا ہے۔"
                 />
+
+                {/* Introduction Video */}
+                <div className="my-6 border border-zinc-200 bg-zinc-50/50 rounded-2xl p-4 md:p-6 shadow-sm hover:shadow-md transition-all duration-300">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+                    <h3 className="text-sm md:text-base font-bold text-[#2E4E90] font-latin">
+                      Introduction Video
+                    </h3>
+                    <h3 className="text-sm md:text-base font-bold text-[#2E4E90] font-urdu text-right dir-rtl leading-normal">
+                      تعارفی ویڈیو
+                    </h3>
+                  </div>
+                  <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-zinc-200 shadow-inner bg-black">
+                    <iframe
+                      src="https://www.youtube.com/embed/SbJs0Dyr8bQ?rel=0&modestbranding=1"
+                      title="Psycheversity Introduction Video"
+                      className="absolute top-0 left-0 w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+
                 <BilingualPara
                   en="The program consists of short daily writing activities that you complete from your phone or computer, in English or Urdu, taking about 10–15 minutes a day. Your participation also supports scientific research on wellbeing in Pakistan."
                   ur="اس پروگرام میں مختصر روزانہ تحریری سرگرمیاں شامل ہیں جو آپ اپنے موبائل یا کمپیوٹر سے، انگریزی یا اردو میں، روزانہ تقریباً 10 تا 15 منٹ میں مکمل کر سکتے ہیں۔ آپ کی شرکت پاکستان میں فلاح و بہبود سے متعلق سائنسی تحقیق میں بھی معاون ہوگی۔"

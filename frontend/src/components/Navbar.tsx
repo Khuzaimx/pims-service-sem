@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogOut, User, LayoutDashboard, Settings, Menu, X, HelpCircle } from 'lucide-react';
+import { LogOut, User, LayoutDashboard, Settings, Menu, X, HelpCircle, Home } from 'lucide-react';
 import LanguageSwitcher from './LanguageSwitcher';
 import SupportModal from './SupportModal';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +16,8 @@ const Navbar: React.FC = () => {
   const isAuthenticated = !!localStorage.getItem('access_token');
   const userRole = localStorage.getItem('user_role');
   const isAdmin = userRole === 'Admin';
-  const showLanguageSwitcher = isAuthenticated && !isActivityPage && !isDashboardPage;
+  const isLandingPage = location.pathname === '/';
+  const showLanguageSwitcher = isAuthenticated && !isActivityPage && !isDashboardPage && !isLandingPage;
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
@@ -67,9 +68,14 @@ const Navbar: React.FC = () => {
             {isAuthenticated && (
               <>
                 {!isAdmin && (
-                  <Link to="/dashboard" className="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors flex items-center gap-2">
-                    <LayoutDashboard size={18} /> {t('navbar.dashboard')}
-                  </Link>
+                  <>
+                    <Link to="/" className="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors flex items-center gap-2">
+                      <Home size={18} /> {t('navbar.home')}
+                    </Link>
+                    <Link to="/dashboard" className="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors flex items-center gap-2">
+                      <LayoutDashboard size={18} /> {t('navbar.dashboard')}
+                    </Link>
+                  </>
                 )}
                 {isAdmin && (
                   <Link to="/admin" className="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors flex items-center gap-2">
@@ -132,13 +138,22 @@ const Navbar: React.FC = () => {
             {isAuthenticated ? (
               <>
                 {!isAdmin && (
-                  <Link
-                    to="/dashboard"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center gap-3 text-sm font-medium text-zinc-600 py-2"
-                  >
-                    <LayoutDashboard size={20} /> {t('navbar.dashboard')}
-                  </Link>
+                  <>
+                    <Link
+                      to="/"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="flex items-center gap-3 text-sm font-medium text-zinc-600 py-2"
+                    >
+                      <Home size={20} /> {t('navbar.home')}
+                    </Link>
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="flex items-center gap-3 text-sm font-medium text-zinc-600 py-2"
+                    >
+                      <LayoutDashboard size={20} /> {t('navbar.dashboard')}
+                    </Link>
+                  </>
                 )}
                 {isAdmin && (
                   <Link
@@ -190,7 +205,7 @@ const Navbar: React.FC = () => {
       {isAuthenticated && !isAdmin && (
         <button
           onClick={() => setIsSupportOpen(true)}
-          className="fixed bottom-6 right-6 z-50 px-5 py-3 bg-zinc-900 text-white hover:bg-zinc-800 rounded-full shadow-2xl hover:shadow-zinc-900/30 transition-all duration-300 hover:scale-105 flex items-center gap-2 border border-zinc-700/50 animate-in fade-in zoom-in-95 duration-300 font-semibold text-sm"
+          className="fixed bottom-6 left-6 sm:left-auto sm:right-6 z-50 px-5 py-3 bg-zinc-900 text-white hover:bg-zinc-800 rounded-full shadow-2xl hover:shadow-zinc-900/30 transition-all duration-300 hover:scale-105 flex items-center gap-2 border border-zinc-700/50 animate-in fade-in zoom-in-95 duration-300 font-semibold text-sm"
           title="Support / رابطہ"
         >
           <HelpCircle size={18} />
